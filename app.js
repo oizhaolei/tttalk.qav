@@ -23,6 +23,7 @@ app.get('/offline', user.offline);
 app.get('/onlines', user.onlines);
 app.get('/conversation', qav.conversation);
 app.get('/charge', qav.charge);
+app.get('/feedback', qav.feedback);
 
 var server = app.listen(config.app_port, function() {
   logger.debug('Listening on port %d', server.address().port);
