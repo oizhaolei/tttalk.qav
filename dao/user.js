@@ -41,29 +41,3 @@ exports.onlines = function(req, res, next) {
     res.status(200).send(Object.keys(onlines));
   });
 }
-// http://211.149.218.190:5000/conversation?status=begin|end
-exports.conversation = function(req, res, next) {
-  var username = req.query.username;
-  var status = req.query.status;
-  if (status == 'begin') {
-    redisClient.hdel('translator_online', username, function(error, res) {
-      if (error) {
-        console.log(error);
-      } else {
-        console.log(res);
-      }
-    });
-  } else if (status == 'end') {
-    redisClient.hset('translator_online', username, '1', function(error, res) {
-      if (error) {
-        console.log(error);
-      } else {
-        console.log(res);
-      }
-
-    });
-  }
-  res.status(200).send({
-    success : true
-  });
-}
