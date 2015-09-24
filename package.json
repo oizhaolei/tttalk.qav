@@ -1,0 +1,17 @@
+{
+  "name": "tttalk.qav",
+  "version": "1.0.0",
+  "description": "tttalk qav",
+  "dependencies": {
+    "body-parser": "*",
+    "curlrequest": "*",
+    "express": "*",
+    "log4js": "*",
+    "redis": "*",
+    "request": "*",
+    "mysql": "*"
+  },
+  "bundleDependencies": [],
+  "private": true,
+  "main": "app.js"
+}

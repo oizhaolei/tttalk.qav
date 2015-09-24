@@ -1,0 +1,45 @@
+腾讯 音视频云通信
+服务器端DEMO
+
+   install dependencies:
+     $ cd . && npm install
+
+   run the app:
+     $ DEBUG=qav-api:* npm start
+
+
+#user/volunteer login取得qav的id和sig
+对user_login.php/volunteer_login.php进行扩展
+REQ: qav=true
+RES: qav_id, qav_sig
+EXP:
+http://ctalk2/tttalk150806/user/user_login.php?encrypt=true&loginid=4638&password=*89C6B530AA78695E257E55D63C00A6EC9AD3E977&qav=true&serial=42f6a616add0bfc9&sign=991d6126e54f3e4abdb9bd393e554309eed36ce4&source=ttt-2015082415&username=oizhaolei%40gmail.com
+http://ctalk2/tttalk.web/v3.1/volunteer_login.php?encrypt=true&loginid=2074&password=*89C6B530AA78695E257E55D63C00A6EC9AD3E977&qav=true&sign=d37d6422dfaaa56d6a486d847916ce4109653b60&source=an-2015073107&username=oizhaolei....%40gmail.com
+
+# volunteer online
+/api/online/v_1234
+
+# volunteer offline
+/api/offline/v_1234
+
+# online volunteer list
+/api/onlines
+
+# volunteer conversation begin -> busy
+/api/conversationd/start/u_5678/v_1234
+=> conversation_id
+
+# volunteer conversation end -> online
+/api/conversation/end/conversation_id
+
+# volunteer charge begin
+/api/charge/start/conversation_id
+
+# volunteer charge end
+/api/charge/end/conversation_id
+
+# feedback
+POST /api/feed_back/conversation_id
+    network=5
+    peer=5
+    peer_comment=
