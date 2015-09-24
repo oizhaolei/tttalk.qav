@@ -11,7 +11,7 @@ redisClient.on("error", function(err) {
   logger.error("Redis server error :", err);
 });
 
-// http://211.149.218.190:5000/conversation?username=liujiuyi&status=begin&user_id=u_100&agent_emp_id=v_200&from_lang=CN&to_lang=KR|end&
+// http://211.149.218.190:5000/conversation?username=liujiuyi&status=begin&user_id=u_100&agent_emp_id=v_200&from_lang=CN&to_lang=KR|oncall_id=100&end
 exports.conversation = function(req, res, next) {
   var username = req.query.username;
   var status = req.query.status;
@@ -51,9 +51,19 @@ exports.conversation = function(req, res, next) {
         console.log(res);
       }
     });
-
-    res.status(200).send({
-      success : true
+    var oncall_id = req.query.oncall_id;
+    var sql = 'update tbl_on_call set end_time = utc_timestamp(3) where id= ?';
+    var args = [ oncall_id ];
+    logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+    var query = pool.query(sql, args, function(err, result) {
+      if (err) {
+        logger.error(err);
+        next(err);
+      } else {
+        res.status(200).send({
+          success : true
+        });
+      }
     });
   }
 }
