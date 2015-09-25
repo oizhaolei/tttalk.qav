@@ -231,7 +231,7 @@ exports.feedbacks = function(req, res, next) {
     args.push(user_id);
     sqlWhere += " a.user_id = ?";
   }
-  var sql = 'select a.*, b.user_network_star, b.user_translate_star, b.user_comment, b.translator_network_star, b.translator_translate_star, b.translator_comment, b.create_date from tbl_on_call a left join tbl_on_call_feedback b on a.id = b.on_call_id where'
+  var sql = 'select a.*, b.user_network_star, b.user_translate_star, b.user_comment, b.translator_network_star, b.translator_translate_star, b.translator_comment from tbl_on_call a left join tbl_on_call_feedback b on a.id = b.on_call_id where'
       + sqlWhere + ' order by a.id desc limit ' + config.rowsPerPage;
   ;
 
