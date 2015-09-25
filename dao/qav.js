@@ -3,6 +3,7 @@ var config = require("../config.js").config;
 var mysql = require('mysql');
 var logger = require('log4js').getLogger('qav');
 var pool = mysql.createPool(config.mysql.ttt.main);
+var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
 var redis = require("redis");
 var redisClient = redis.createClient(config.redis.port, config.redis.server,
@@ -216,3 +217,27 @@ exports.feedback = function(req, res, next) {
     }
   });
 }
+//http://211.149.218.190:5000/feedbacks?type=1&agent_emp_id=2071
+exports.feedbacks = function(req, res, next) {
+  var args = [];
+  var sqlWhere = "";
+  var type = req.query.type;//1:user2:tranlsator
+  if (type == 1) {
+    var agent_emp_id = req.query.agent_emp_id;
+    args.push(agent_emp_id);
+    sqlWhere += " a.agent_emp_id = ?";
+  } else {
+    var user_id = req.query.user_id;
+    args.push(user_id);
+    sqlWhere += " a.user_id = ?";
+  }
+  var sql = 'select a.*, b.user_network_star, b.user_translate_star, b.user_comment, b.translator_network_star, b.translator_translate_star, b.translator_comment, b.create_date from tbl_on_call a left join tbl_on_call_feedback b on a.id = b.on_call_id where'
+      + sqlWhere + ' order by a.id desc limit ' + config.rowsPerPage;
+  ;
+
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+  readonlyPool.query(sql, args, function(err, channels) {
+    logger.debug(JSON.stringify(channels));
+    res.status(200).send(channels);
+  });
+};
