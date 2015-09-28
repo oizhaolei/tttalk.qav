@@ -88,8 +88,9 @@ exports.charge = function(req, res, next) {
       }
     });
   } else if (status == 'end') {
-    var sql = 'update tbl_on_call set end_charge_time = utc_timestamp(3) where id= ?';
-    var args = [ on_call_id ];
+    var charge_length = req.query.charge_length;
+    var sql = 'update tbl_on_call set charge_length = ?, end_charge_time = utc_timestamp(3) where id= ?';
+    var args = [ charge_length, on_call_id ];
     logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
     var query = pool.query(sql, args, function(err, result) {
       if (err) {
@@ -104,15 +105,15 @@ exports.charge = function(req, res, next) {
     });
   }
 }
-// http://211.149.218.190:5000/feedback?on_call_id=17&user_network_star=1&user_translate_star=1
-// http://211.149.218.190:5000/feedback?on_call_id=17&translator_network_star=2&translator_translate_star=2
+// http://211.149.218.190:5000/feedback?on_call_id=17&user_network_star=1&user_translator_star=1
+// http://211.149.218.190:5000/feedback?on_call_id=17&translator_network_star=2&translator_user_star=2
 exports.feedback = function(req, res, next) {
   var on_call_id = req.query.on_call_id;
   var user_network_star = req.query.user_network_star;
-  var user_translate_star = req.query.user_translate_star;
+  var user_translator_star = req.query.user_translator_star;
   var user_comment = req.query.user_comment;
   var translator_network_star = req.query.translator_network_star;
-  var translator_translate_star = req.query.translator_translate_star;
+  var translator_user_star = req.query.translator_user_star;
   var translator_comment = req.query.translator_comment;
 
   var sql = 'select * from tbl_on_call_feedback where on_call_id = ?';
@@ -129,9 +130,9 @@ exports.feedback = function(req, res, next) {
           updateArgs.push(user_network_star);
           updateSql += ' user_network_star = ?,';
         }
-        if (typeof (user_translate_star) != "undefined") {
-          updateArgs.push(user_translate_star);
-          updateSql += ' user_translate_star = ?,';
+        if (typeof (user_translator_star) != "undefined") {
+          updateArgs.push(user_translator_star);
+          updateSql += ' user_translator_star = ?,';
         }
         if (typeof (user_comment) != "undefined") {
           updateArgs.push(user_comment);
@@ -141,9 +142,9 @@ exports.feedback = function(req, res, next) {
           updateArgs.push(translator_network_star);
           updateSql += ' translator_network_star = ?,';
         }
-        if (typeof (translator_translate_star) != "undefined") {
-          updateArgs.push(translator_translate_star);
-          updateSql += ' translator_translate_star = ?,';
+        if (typeof (translator_user_star) != "undefined") {
+          updateArgs.push(translator_user_star);
+          updateSql += ' translator_user_star = ?,';
         }
         if (typeof (translator_comment) != "undefined") {
           updateArgs.push(translator_comment);
@@ -172,9 +173,9 @@ exports.feedback = function(req, res, next) {
           insertArgs.push(user_network_star);
           insertSql2 += '?, ';
         }
-        if (typeof (user_translate_star) != "undefined") {
-          insertSql += ' user_translate_star,';
-          insertArgs.push(user_translate_star);
+        if (typeof (user_translator_star) != "undefined") {
+          insertSql += ' user_translator_star,';
+          insertArgs.push(user_translator_star);
           insertSql2 += '?, ';
         }
         if (typeof (user_comment) != "undefined") {
@@ -187,9 +188,9 @@ exports.feedback = function(req, res, next) {
           insertArgs.push(translator_network_star);
           insertSql2 += '?, ';
         }
-        if (typeof (translator_translate_star) != "undefined") {
-          insertSql += ' translator_translate_star,';
-          insertArgs.push(translator_translate_star);
+        if (typeof (translator_user_star) != "undefined") {
+          insertSql += ' translator_user_star,';
+          insertArgs.push(translator_user_star);
           insertSql2 += '?, ';
         }
         if (typeof (translator_comment) != "undefined") {
@@ -231,7 +232,7 @@ exports.feedbacks = function(req, res, next) {
     args.push(user_id);
     sqlWhere += " a.user_id = ?";
   }
-  var sql = 'select a.*, b.user_network_star, b.user_translate_star, b.user_comment, b.translator_network_star, b.translator_translate_star, b.translator_comment from tbl_on_call a left join tbl_on_call_feedback b on a.id = b.on_call_id where'
+  var sql = 'select a.*, b.user_network_star, b.user_translator_star, b.user_comment, b.translator_network_star, b.translator_user_star, b.translator_comment from tbl_on_call a left join tbl_on_call_feedback b on a.id = b.on_call_id where'
       + sqlWhere + ' order by a.id desc limit ' + config.rowsPerPage;
   ;
 
