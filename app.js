@@ -1,6 +1,6 @@
 var crypto = require('crypto');
 var config = require('./config.js').config;
-var user = require('./dao/user.js');
+var volunteer = require('./dao/volunteer.js');
 var qav = require('./dao/qav.js');
 var logger = require('log4js').getLogger('app');
 
@@ -18,10 +18,13 @@ app.all('/', function(req, res) {
   res.json({});
 });
 
-app.get('/online', user.online);
-app.get('/offline', user.offline);
-app.get('/onlines', user.onlines);
+//volunteer
+app.get('/volunteer/online', volunteer.online);
+app.get('/volunteer/offline', volunteer.offline);
+app.get('/volunteer/qav_request', volunteer.onlines);
+
 app.get('/conversation', qav.conversation);
+
 app.get('/charge', qav.charge);
 app.get('/feedback', qav.feedback);
 app.get('/feedbacks', qav.feedbacks);
