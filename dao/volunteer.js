@@ -13,8 +13,7 @@ exports.online = function(req, res, next) {
     username = username.substring(2);
   }
   // merge sql
-  var sql = 'insert into qav_devices (agent_emp_id, last_online_time, status, create_date) values(?, utc_timestamp(3), "online", utc_timestamp(3)) ON DUPLICATE KEY UPDATE last_online_time = utc_timestamp(3) and status="online"';
-
+  var sql = 'insert into qav_devices (agent_emp_id, last_online_time, status, create_date) values(?, utc_timestamp(3), "online", utc_timestamp(3)) ON DUPLICATE KEY UPDATE last_online_time = utc_timestamp(3), status="online"';
   var args = [ username ];
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
@@ -27,7 +26,7 @@ exports.online = function(req, res, next) {
   });
 };
 
-// http://211.149.218.190:5000/volunteer/offline?username=v_2435
+// http://211.149.218.190:5000/volunteer/offline?username=v_2047
 exports.offline = function(req, res, next) {
   var username = req.query.username;
   if (username.indexOf('v_') === 0) {
@@ -48,7 +47,7 @@ exports.offline = function(req, res, next) {
   });
 };
 
-// http://211.149.218.190:5000/volunteer/qav_request?lang1=CN&lang2=KR
+// http://211.149.218.190:5000/volunteer/qav_request?lang1=CN&lang2=EN
 exports.onlines = function(req, res, next) {
   var lang1 = req.query.lang1;
   var lang2 = req.query.lang2;
