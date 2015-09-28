@@ -3,6 +3,7 @@ var config = require("../config.js").config;
 var mysql = require('mysql');
 var logger = require('log4js').getLogger('qav');
 var pool = mysql.createPool(config.mysql.ttt.main);
+var tttalkPool = mysql.createPool(config.mysql.ttt.tttalk);
 var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
 var redis = require("redis");
@@ -69,7 +70,7 @@ exports.conversation = function(req, res, next) {
     });
   }
 }
-// http://211.149.218.190:5000/charge?on_call_id=100&status=begin|end
+// http://211.149.218.190:5000/charge?on_call_id=100&status=begin|end&charge_length=11
 exports.charge = function(req, res, next) {
   var on_call_id = req.query.on_call_id;
   var status = req.query.status;
@@ -89,15 +90,17 @@ exports.charge = function(req, res, next) {
     });
   } else if (status == 'end') {
     var charge_length = req.query.charge_length;
-    var sql = 'update tbl_on_call set charge_length = ?, end_charge_time = utc_timestamp(3) where id= ?';
-    var args = [ charge_length, on_call_id ];
+    var sql = 'update tbl_on_call set fee = ?, translator_fee = ?, charge_length = ?, end_charge_time = utc_timestamp(3) where id= ?';
+    var args = [ fee, translator_fee, charge_length, on_call_id ];
     logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
     var query = pool.query(sql, args, function(err, result) {
       if (err) {
         logger.error(err);
         next(err);
       } else {
-        // 计费方法实现{}
+        // 扣除用户费用
+        // 翻译者增加翻译费
+        updateFee(on_call_id);
         res.status(200).send({
           success : true
         });
@@ -218,11 +221,11 @@ exports.feedback = function(req, res, next) {
     }
   });
 }
-//http://211.149.218.190:5000/feedbacks?type=1&agent_emp_id=2071
+// http://211.149.218.190:5000/feedbacks?type=1&agent_emp_id=2071
 exports.feedbacks = function(req, res, next) {
   var args = [];
   var sqlWhere = "";
-  var type = req.query.type;//1:user2:tranlsator
+  var type = req.query.type;// 1:user2:tranlsator
   if (type == 1) {
     var agent_emp_id = req.query.agent_emp_id;
     args.push(agent_emp_id);
@@ -237,8 +240,47 @@ exports.feedbacks = function(req, res, next) {
   ;
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-  readonlyPool.query(sql, args, function(err, channels) {
-    logger.debug(JSON.stringify(channels));
-    res.status(200).send(channels);
+  readonlyPool.query(sql, args, function(err, feedbacks) {
+    logger.debug(JSON.stringify(feedbacks));
+    res.status(200).send(feedbacks);
   });
-};
+}
+
+function updateFee(on_call_id) {
+  // 计费方法实现{}
+  var fee = config.voiceFee * charge_length;
+  var translator_fee = config.voiceTranslatorFee * charge_length;
+  
+  var sql = 'select * from tbl_on_call where id = ?';
+  var args = [on_call_id];
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+  readonlyPool.query(sql, args, function(err, result) {
+    if (result && result.length > 0) {
+      var user_id = result.user_id;
+      var translator_id = result.agent_emp_id;
+      
+      var userSql = 'update tbl_user set balance = balance - ?, update_date = utc_timestamp(3) where id = ?';
+      var userArgs = [ fee, user_id ];
+      var translatorSql = 'update tbl_agent_emp set balance = balance + ?, update_date = utc_timestamp(3) where id = ?';
+      var translatorArgs = [ translator_fee, translator_id ];
+      logger.debug('[sql:]%s, %s', userSql, JSON.stringify(userArgs));
+      logger.debug('[sql:]%s, %s', translatorSql, JSON.stringify(translatorArgs));
+      pool.query(userSql, userArgs, function(
+          err, result) {
+        if (err) {
+          logger.error(err);
+          next(err);
+        }
+      });
+      pool.query(translatorSql, translatorArgs, function(
+          err, result) {
+        if (err) {
+          logger.error(err);
+          next(err);
+        }
+      });
+    }
+  });
+  
+  
+}
