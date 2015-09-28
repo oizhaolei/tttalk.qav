@@ -57,11 +57,12 @@ exports.onlines = function(req, res, next) {
   var args = [ lang1, lang2, lang2, lang1 ];
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-  var query = pool.query(sql, args, function(err, data) {
+  var query = readonlyPool.query(sql, args, function(err, data) {
     if (err) {
       res.status(500).send("error");
     } else {
       res.status(200).send(data);
+      //push notice to volunteers
     }
   });
 
