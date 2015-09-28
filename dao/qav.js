@@ -90,6 +90,9 @@ exports.charge = function(req, res, next) {
     });
   } else if (status == 'end') {
     var charge_length = req.query.charge_length;
+    // 计费方法实现{}
+    var fee = config.voiceFee * charge_length;
+    var translator_fee = config.voiceTranslatorFee * charge_length;
     var sql = 'update tbl_on_call set fee = ?, translator_fee = ?, charge_length = ?, end_charge_time = utc_timestamp(3) where id= ?';
     var args = [ fee, translator_fee, charge_length, on_call_id ];
     logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
@@ -100,7 +103,7 @@ exports.charge = function(req, res, next) {
       } else {
         // 扣除用户费用
         // 翻译者增加翻译费
-        updateFee(on_call_id);
+        updateFee(on_call_id, fee, translator_fee);
         res.status(200).send({
           success : true
         });
@@ -246,11 +249,7 @@ exports.feedbacks = function(req, res, next) {
   });
 }
 
-function updateFee(on_call_id) {
-  // 计费方法实现{}
-  var fee = config.voiceFee * charge_length;
-  var translator_fee = config.voiceTranslatorFee * charge_length;
-  
+function updateFee(on_call_id, fee, translator_fee) {  
   var sql = 'select * from tbl_on_call where id = ?';
   var args = [on_call_id];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
@@ -265,18 +264,16 @@ function updateFee(on_call_id) {
       var translatorArgs = [ translator_fee, translator_id ];
       logger.debug('[sql:]%s, %s', userSql, JSON.stringify(userArgs));
       logger.debug('[sql:]%s, %s', translatorSql, JSON.stringify(translatorArgs));
-      pool.query(userSql, userArgs, function(
+      tttalkPool.query(userSql, userArgs, function(
           err, result) {
         if (err) {
           logger.error(err);
-          next(err);
         }
       });
-      pool.query(translatorSql, translatorArgs, function(
+      tttalkPool.query(translatorSql, translatorArgs, function(
           err, result) {
         if (err) {
           logger.error(err);
-          next(err);
         }
       });
     }
