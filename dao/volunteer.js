@@ -10,7 +10,7 @@ redisClient.on("error", function(err) {
   logger.error("Redis server error :", err);
 });
 
-// http://211.149.218.190:5000/online?username=liujiuyi
+// http://211.149.218.190:5000/volunteer/online?username=liujiuyi
 exports.online = function(req, res, next) {
   var username = req.query.username;
   redisClient.hset('translator_online', username, '1', function(error, res) {
@@ -23,7 +23,8 @@ exports.online = function(req, res, next) {
   });
   res.status(200).send(username);
 };
-// http://211.149.218.190:5000/offline?username=liujiuyi
+
+// http://211.149.218.190:5000/volunteer/offline?username=liujiuyi
 exports.offline = function(req, res, next) {
   var username = req.query.username;
   redisClient.hdel('translator_online', username, function(error, res) {
@@ -35,9 +36,10 @@ exports.offline = function(req, res, next) {
   });
   res.status(200).send(username);
 };
-// http://211.149.218.190:5000/onlines
+
+// http://211.149.218.190:5000/volunteer/qav_request
 exports.onlines = function(req, res, next) {
   redisClient.hgetall("translator_online", function(err, onlines) {
     res.status(200).send(Object.keys(onlines));
   });
-}
+};
