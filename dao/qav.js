@@ -2,14 +2,20 @@ var util = require('util');
 var config = require("../config.js").config;
 var mysql = require('mysql');
 var logger = require('log4js').getLogger('qav');
+
 var pool = mysql.createPool(config.mysql.ttt.main);
 var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
+var Gearman = require("node-gearman");
+var gearman = new Gearman(config.gearman.server, config.gearman.port);
+
+var cacheClient = require('../lib/ocs');
+
 var volunteer = require('./volunteer.js');
 
-// http://211.149.218.190:5000/conversation/begin?conversation_id=17&volunteer_id=v_2074
+// http://211.149.218.190:5000/conversation/begin?conversation_id=17&agent_emp_id=2074
 exports.beginConversation = function(req, res, next) {
-  var conversation_id = req.query.conversation_id;
+  var conversation_id = req.query.agent_emp_id;
 
   var agent_emp_id = req.query.volunteer_id;
   if (agent_emp_id.indexOf('v_') === 0) {

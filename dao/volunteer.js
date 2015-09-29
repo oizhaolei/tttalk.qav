@@ -1,13 +1,14 @@
 var util = require('util');
 var config = require("../config.js").config;
 var mysql = require('mysql');
-var logger = require('log4js').getLogger('user');
+var logger = require('log4js').getLogger('volunteer');
 
 var pool = mysql.createPool(config.mysql.ttt.main);
 var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
 var Gearman = require("node-gearman");
 var gearman = new Gearman(config.gearman.server, config.gearman.port);
+
 var cacheClient = require('../lib/ocs');
 
 // http://211.149.218.190:5000/volunteer/online?loginid=2074
@@ -32,7 +33,7 @@ exports.online = function(req, res, next) {
 };
 
 changeField = function(agent_emp_id, field, val, cb) {
-    // merge sql
+    // update sql
   var sql = 'update qav_devices set ' + field + ' = ? where agent_emp_id = ?';
   var args = [ val, agent_emp_id];
 
@@ -50,7 +51,12 @@ exports.offline = function(req, res, next) {
     agent_emp_id = agent_emp_id.substring(2);
   }
 
-  changeField(agent_emp_id, 'status', 'offline', function(err, result){
+  // update sql
+  var sql = 'update qav_devices set status = ?, busy = ? where agent_emp_id = ?';
+  var args = [ 'offline', 0, agent_emp_id];
+
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+  var query = pool.query(sql, args, function(err, result) {
     if (err) {
       res.status(500).send("error");
     } else {
