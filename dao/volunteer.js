@@ -54,9 +54,9 @@ exports.offline = function(req, res, next) {
   });
 };
 
-// http://211.149.218.190:5000/volunteer/qav_request?lang1=CN&lang2=EN&user_id=u_4638
-exports.onlines = function(req, res, next) {
-  var user_id = req.query.user_id;
+// http://211.149.218.190:5000/volunteer/qav_request?lang1=CN&lang2=EN
+exports.qavRequest = function(req, res, next) {
+  var user_id = req.query.loginid;
   var lang1 = req.query.lang1;
   var lang2 = req.query.lang2;
   if (user_id.indexOf('u_') === 0) {
