@@ -32,6 +32,26 @@ exports.beginConversation = function(req, res, next) {
       res.status(200).json({
         'success' : true
       });
+
+      //push cancel notice to volunteers
+      var key = "qav_request_volunteers_" + conversation_id;
+      cacheClient.get(key, function(err, volunteers) {
+        if (volunteers){
+          volunteers.forEach(function(item) {
+            if (item.agent_emp_id === agent_emp_id) return;
+
+            message = {
+              'user_id': item.agent_emp_id,
+              'title' : 'qav_call_cancel',
+              'content_id' : conversation_id,
+              'app_name': 'volunteer'
+            };
+
+            gearman.submitJob("push_message", JSON.stringify(message));
+          });
+
+        }
+      });
     }
   });
 };
@@ -111,29 +131,56 @@ exports.endCharge = function(req, res, next) {
   });
 };
 
-// http://211.149.218.190:5000/charge/confirm?conversation_id=100&charge_length=11
-exports.confirmCharge = function(req, res, next) {
+// http://211.149.218.190:5000/charge/update?conversation_id=100&charge_length=11
+exports.updateCharge = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
   var charge_length = req.query.charge_length;
-  // 计费方法实现{}
-  var fee = config.voiceFee * charge_length;
-  var translator_fee = config.voiceTranslatorFee * charge_length;
-  var sql = 'update tbl_conversation set status = ?, fee = ?, translator_fee = ?, charge_length = ? where id= ?';
-  var args = [ 'charged', fee, translator_fee, charge_length, conversation_id ];
+
+  var sql = 'update tbl_conversation set charge_length = ? where id= ?';
+  var args = [ charge_length, conversation_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
     if (err) {
       logger.error(err);
       next(err);
     } else {
-      // 扣除用户费用
-      // 翻译者增加翻译费
-      updateFee(conversation_id, fee, translator_fee);
       res.status(200).send({
         success : true
       });
     }
   });
+};
+
+// http://211.149.218.190:5000/charge/confirm?conversation_id=100
+exports.confirmCharge = function(req, res, next) {
+  var conversation_id = req.query.conversation_id;
+  findConversationByPK(conversation_id, function(err, result) {
+    if (result && result.length > 0) {
+      var conversation = result[0];
+
+      var charge_length = conversation.charge_length;
+      // 计费方法实现{}
+      var fee = config.voiceFee * charge_length;
+      var translator_fee = config.voiceTranslatorFee * charge_length;
+      var sql = 'update tbl_conversation set status = ?, fee = ?, translator_fee = ? where id= ?';
+      var args = [ 'charged', fee, translator_fee, conversation_id ];
+      logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+      var query = pool.query(sql, args, function(err, result) {
+        if (err) {
+          logger.error(err);
+          next(err);
+        } else {
+          // 扣除用户费用
+          // 翻译者增加翻译费
+          updateFee(conversation_id, fee, translator_fee);
+          res.status(200).send({
+            success : true
+          });
+        }
+      });
+    }
+  });
+
 };
 
 findConversationFeedbackByPK = function(conversation_id, cb) {
@@ -279,8 +326,9 @@ exports.feedbacks = function(req, res, next) {
 updateFee = function(conversation_id, fee, translator_fee) {
   findConversationByPK(conversation_id, function(err, result) {
     if (result && result.length > 0) {
-      var user_id = result.user_id;
-      var translator_id = result.agent_emp_id;
+      var conversation = result[0];
+      var user_id = conversation.user_id;
+      var translator_id = conversation.agent_emp_id;
 
       var userSql = 'update tbl_user set balance = balance - ?, update_date = utc_timestamp(3) where id = ?';
       var userArgs = [ fee, user_id ];
@@ -288,14 +336,12 @@ updateFee = function(conversation_id, fee, translator_fee) {
       var translatorArgs = [ translator_fee, translator_id ];
       logger.debug('[sql:]%s, %s', userSql, JSON.stringify(userArgs));
       logger.debug('[sql:]%s, %s', translatorSql, JSON.stringify(translatorArgs));
-      pool.query(userSql, userArgs, function(
-        err, result) {
+      pool.query(userSql, userArgs, function(err, result) {
         if (err) {
           logger.error(err);
         }
       });
-      pool.query(translatorSql, translatorArgs, function(
-        err, result) {
+      pool.query(translatorSql, translatorArgs, function(err, result) {
         if (err) {
           logger.error(err);
         }
@@ -306,7 +352,7 @@ updateFee = function(conversation_id, fee, translator_fee) {
 
 exports.detailConversation = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
-  findConversationByPK(conversation_id, function(err, result) {
+  findConversationByPK(conversation_id, function(err, data) {
       if (data && data.length > 0) {
         data = data[0];
         res.status(200).send(data);

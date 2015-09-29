@@ -29,6 +29,7 @@ app.get('/conversation/detail', qav.detailConversation);
 
 app.get('/charge/begin', qav.beginCharge);
 app.get('/charge/end', qav.endCharge);
+app.get('/charge/update', qav.updateCharge);
 app.get('/charge/confirm', qav.confirmCharge);
 
 app.get('/feedback', qav.feedback);

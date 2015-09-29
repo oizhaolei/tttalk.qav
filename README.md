@@ -17,26 +17,39 @@ http://ctalk2/tttalk150806/user/user_login.php?encrypt=true&loginid=4638&passwor
 http://ctalk2/tttalk.web/v3.1/volunteer_login.php?encrypt=true&loginid=2074&password=*89C6B530AA78695E257E55D63C00A6EC9AD3E977&qav=true&sign=d37d6422dfaaa56d6a486d847916ce4109653b60&source=an-2015073107&username=oizhaolei....%40gmail.com
 
 # volunteer online
-http://211.149.218.190:5000/volunteer/online?username=v_2074
+http://211.149.218.190:5000/volunteer/online?loginid=2074
 
 # volunteer offline
-http://211.149.218.190:5000/volunteer/offline?username=v_2074
+http://211.149.218.190:5000/volunteer/offline?loginid=2074
 
-# request online volunteer list, and push message
-http://211.149.218.190:5000/volunteer/qav_request?lang1=CN&lang2=EN&login=567
+# user request service
+http://211.149.218.190:5000/volunteer/qav_request?lang1=CN&lang2=EN&loginin=4638
 
-# volunteer conversation begin -> busy
-http://211.149.218.190:5000/conversation/begin?user_id=u_100&agent_emp_id=v_200&from_lang=CN&to_lang=KR
+# user conversation begin
+http://211.149.218.190:5000/conversation/begin?conversation_id=17&agent_emp_id=2074
 
-# volunteer conversation end -> online
+# user conversation end -> online
 http://211.149.218.190:5000/conversation/end?conversation_id=17
 
 # volunteer charge begin
-http://211.149.218.190:5000/charge?conversation_id=100&status=begin
+http://211.149.218.190:5000/charge/begin?conversation_id=100
 
 # volunteer charge end
-http://211.149.218.190:5000/charge?conversation_id=100&status=end
+http://211.149.218.190:5000/charge/end?conversation_id=100&charge_length=11
 
-# feedback
+# volunteer charge update
+http://211.149.218.190:5000/charge/update?conversation_id=100&charge_length=11
+
+# user charge confirm
+http://211.149.218.190:5000/charge/confirm?conversation_id=100
+
+# user feedback
 http://211.149.218.190:5000/feedback?conversation_id=17&user_network_star=1&user_translate_star=1
+# volunteer feedback
 http://211.149.218.190:5000/feedback?conversation_id=17&translator_network_star=2&translator_translate_star=2
+
+
+
+
+TIM_CUSTOM_TYPE_CONVERSATION_TIMER = "TIM_CUSTOM_TYPE_CONVERSATION_TIMER";
+TIM_CUSTOM_TYPE_CONVERSATION_WAIT_CALL = "TIM_CUSTOM_TYPE_CONVERSATION_WAIT_CALL";
