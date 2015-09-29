@@ -6,7 +6,7 @@ var logger = require('log4js').getLogger('user');
 var pool = mysql.createPool(config.mysql.ttt.main);
 var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
-// http://211.149.218.190:5000/volunteer/online?username=v_2435
+// http://211.149.218.190:5000/volunteer/online?username=v_2074
 exports.online = function(req, res, next) {
   var username = req.query.username;
   if (username.indexOf('v_') === 0) {
@@ -26,19 +26,26 @@ exports.online = function(req, res, next) {
   });
 };
 
-// http://211.149.218.190:5000/volunteer/offline?username=v_2047
+changeField = function(agent_emp_id, field, val, cb) {
+    // merge sql
+  var sql = 'update qav_devices set ' + field + ' = ? where agent_emp_id = ?';
+  var args = [ val, agent_emp_id];
+
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+  var query = pool.query(sql, args, function(err, result) {
+    if(cb) cb(err, result);
+  });
+};
+exports.changeField = changeField;
+
+// http://211.149.218.190:5000/volunteer/offline?username=v_2074
 exports.offline = function(req, res, next) {
   var username = req.query.username;
   if (username.indexOf('v_') === 0) {
     username = username.substring(2);
   }
-  // update sql
-  var sql = 'update qav_devices set status ="offline" where agent_emp_id = ?';
 
-  var args = [ username ];
-
-  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-  var query = pool.query(sql, args, function(err, result) {
+  changeField(username, 'status', 'offline', function(err, result){
     if (err) {
       res.status(500).send("error");
     } else {
@@ -47,10 +54,15 @@ exports.offline = function(req, res, next) {
   });
 };
 
-// http://211.149.218.190:5000/volunteer/qav_request?lang1=CN&lang2=EN
+// http://211.149.218.190:5000/volunteer/qav_request?lang1=CN&lang2=EN&user_id=u_4638
 exports.onlines = function(req, res, next) {
+  var user_id = req.query.user_id;
   var lang1 = req.query.lang1;
   var lang2 = req.query.lang2;
+  if (user_id.indexOf('u_') === 0) {
+    user_id = user_id.substring(2);
+  }
+
   // update sql
   var sql = 'select qd.agent_emp_id, qd.last_online_time, emp.fullname, emp.tel from qav_devices qd, tbl_agent_emp emp inner join (select id from tbl_agent_store where ((lang1=? and lang2=?) or (lang1=? and lang2=?))) store on store.id=emp.agentstoreid where qd.agent_emp_id = emp.id and qd.status ="online" order by qd.last_online_time desc limit 5';
 
@@ -59,10 +71,26 @@ exports.onlines = function(req, res, next) {
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = readonlyPool.query(sql, args, function(err, data) {
     if (err) {
-      res.status(500).send("error");
+      logger.error(err);
+      next(err);
     } else {
-      res.status(200).send(data);
-      //push notice to volunteers
+      var sqli = 'insert into tbl_conversation (user_id, from_lang, to_lang, create_id, create_date) values(?, ?, ?, ?, utc_timestamp(3))';
+      var argsi = [ user_id, lang1, lang2, user_id ];
+      var query = pool.query(sqli, argsi, function(err, result) {
+        if (err) {
+          logger.error(err);
+          next(err);
+        } else {
+          var newId = result.insertId;
+          res.status(200).json({
+            conversation_id : newId,
+            data : data
+          });
+          // TODO push notice to volunteers
+
+        }
+      });
+
     }
   });
 
