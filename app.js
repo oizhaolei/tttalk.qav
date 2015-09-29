@@ -27,7 +27,10 @@ app.get('/conversation/begin', qav.beginConversation);
 app.get('/conversation/end', qav.endConversation);
 app.get('/conversation/detail', qav.detailConversation);
 
-app.get('/charge', qav.charge);
+app.get('/charge/begin', qav.beginCharge);
+app.get('/charge/end', qav.endCharge);
+app.get('/charge/confirm', qav.confirmCharge);
+
 app.get('/feedback', qav.feedback);
 app.get('/feedbacks', qav.feedbacks);
 

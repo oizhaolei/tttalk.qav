@@ -3,7 +3,6 @@ var config = require("../config.js").config;
 var mysql = require('mysql');
 var logger = require('log4js').getLogger('qav');
 var pool = mysql.createPool(config.mysql.ttt.main);
-var tttalkPool = mysql.createPool(config.mysql.ttt.tttalk);
 var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
 var volunteer = require('./volunteer.js');
@@ -70,52 +69,84 @@ findConversationByPK = function(conversation_id, cb) {
   var args = [ conversation_id ];
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-  var query = pool.query(sql, args, function(err, result) {
+  var query = readonlyPool.query(sql, args, function(err, result) {
     if(cb) cb(err, result);
   });
 };
 
-// http://211.149.218.190:5000/charge?conversation_id=100&status=begin|end&charge_length=11
-exports.charge = function(req, res, next) {
+// http://211.149.218.190:5000/charge/begin?conversation_id=100
+exports.beginCharge = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
-  var status = req.query.status;
-  if (status == 'begin') {
-    var sql = 'update tbl_conversation set start_charge_time = utc_timestamp(3) where id= ?';
-    var args = [ conversation_id ];
-    logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-    var query = pool.query(sql, args, function(err, result) {
-      if (err) {
-        logger.error(err);
-        next(err);
-      } else {
-        res.status(200).send({
-          success : true
-        });
-      }
-    });
-  } else if (status == 'end') {
-    var charge_length = req.query.charge_length;
-    // 计费方法实现{}
-    var fee = config.voiceFee * charge_length;
-    var translator_fee = config.voiceTranslatorFee * charge_length;
-    var sql = 'update tbl_conversation set fee = ?, translator_fee = ?, charge_length = ?, end_charge_time = utc_timestamp(3) where id= ?';
-    var args = [ fee, translator_fee, charge_length, conversation_id ];
-    logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-    var query = pool.query(sql, args, function(err, result) {
-      if (err) {
-        logger.error(err);
-        next(err);
-      } else {
-        // 扣除用户费用
-        // 翻译者增加翻译费
-        updateFee(conversation_id, fee, translator_fee);
-        res.status(200).send({
-          success : true
-        });
-      }
-    });
-  }
-}
+  var sql = 'update tbl_conversation set status = ?, start_charge_time = utc_timestamp(3) where id= ?';
+  var args = [ 'chargebegin', conversation_id ];
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+  var query = pool.query(sql, args, function(err, result) {
+    if (err) {
+      logger.error(err);
+      next(err);
+    } else {
+      res.status(200).send({
+        success : true
+      });
+    }
+  });
+};
+
+// http://211.149.218.190:5000/charge/end?conversation_id=100&charge_length=11
+exports.endCharge = function(req, res, next) {
+  var conversation_id = req.query.conversation_id;
+  var charge_length = req.query.charge_length;
+  var sql = 'update tbl_conversation set status = ?, charge_length = ?, end_charge_time = utc_timestamp(3) where id= ?';
+  var args = [ 'chargeend', charge_length, conversation_id ];
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+  var query = pool.query(sql, args, function(err, result) {
+    if (err) {
+      logger.error(err);
+      next(err);
+    } else {
+      res.status(200).send({
+        success : true
+      });
+    }
+  });
+};
+
+// http://211.149.218.190:5000/charge/confirm?conversation_id=100&charge_length=11
+exports.confirmCharge = function(req, res, next) {
+  var conversation_id = req.query.conversation_id;
+  var charge_length = req.query.charge_length;
+  // 计费方法实现{}
+  var fee = config.voiceFee * charge_length;
+  var translator_fee = config.voiceTranslatorFee * charge_length;
+  var sql = 'update tbl_conversation set status = ?, fee = ?, translator_fee = ?, charge_length = ? where id= ?';
+  var args = [ 'charged', fee, translator_fee, charge_length, conversation_id ];
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+  var query = pool.query(sql, args, function(err, result) {
+    if (err) {
+      logger.error(err);
+      next(err);
+    } else {
+      // 扣除用户费用
+      // 翻译者增加翻译费
+      updateFee(conversation_id, fee, translator_fee);
+      res.status(200).send({
+        success : true
+      });
+    }
+  });
+};
+
+findConversationFeedbackByPK = function(conversation_id, cb) {
+  //  sql
+  var sql = 'select * from tbl_conversation_feedback  where conversation_id = ?';
+  var args = [ conversation_id ];
+
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+  var query =readonlyPool.query(sql, args, function(err, result) {
+    if(cb) cb(err, result);
+  });
+};
+
 // http://211.149.218.190:5000/feedback?conversation_id=17&user_network_star=1&user_translator_star=1
 // http://211.149.218.190:5000/feedback?conversation_id=17&translator_network_star=2&translator_user_star=2
 exports.feedback = function(req, res, next) {
@@ -127,13 +158,12 @@ exports.feedback = function(req, res, next) {
   var translator_user_star = req.query.translator_user_star;
   var translator_comment = req.query.translator_comment;
 
-  var sql = 'select * from tbl_conversation_feedback where conversation_id = ?';
-  var args = [ conversation_id ];
-  var query = pool.query(sql, args, function(err, result) {
+  findConversationFeedbackByPK(conversation_id, function(err, result) {
     if (err) {
       logger.error(err);
       next(err);
     } else {
+      var sql, args;
       if (result && result.length > 0) {
         var updateSql = 'update tbl_conversation_feedback set ';
         var updateArgs = [];
@@ -165,16 +195,8 @@ exports.feedback = function(req, res, next) {
         updateSql += ' create_date=utc_timestamp(3) where conversation_id = ?';
 
         logger.debug('[sql:]%s, %s', updateSql, JSON.stringify(updateArgs));
-        var query = pool.query(updateSql, updateArgs, function(err, result) {
-          if (err) {
-            logger.error(err);
-            next(err);
-          } else {
-            res.status(200).send({
-              success : true
-            });
-          }
-        });
+        sql = updateSql;
+        args = updateArgs;
       } else {
         var insertSql = 'insert into tbl_conversation_feedback (';
         var insertSql2 = ' conversation_id, create_date) values (';
@@ -214,18 +236,19 @@ exports.feedback = function(req, res, next) {
 
         logger.debug('[sql:]%s, %s', insertSql + insertSql2, JSON
                      .stringify(insertArgs));
-        var query = pool.query(insertSql + insertSql2, insertArgs, function(
-          err, result) {
-          if (err) {
-            logger.error(err);
-            next(err);
-          } else {
-            res.status(200).send({
-              success : true
-            });
-          }
-        });
+        sql = insertSql + insertSql2;
+        args = insertArgs;
       }
+      var query = pool.query(sql, args, function(err, result) {
+        if (err) {
+          logger.error(err);
+          next(err);
+        } else {
+          res.status(200).send({
+            success : true
+          });
+        }
+      });
     }
   });
 };
@@ -253,11 +276,8 @@ exports.feedbacks = function(req, res, next) {
   });
 };
 
-function updateFee(conversation_id, fee, translator_fee) {
-  var sql = 'select * from tbl_conversation where id = ?';
-  var args = [conversation_id];
-  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-  readonlyPool.query(sql, args, function(err, result) {
+updateFee = function(conversation_id, fee, translator_fee) {
+  findConversationByPK(conversation_id, function(err, result) {
     if (result && result.length > 0) {
       var user_id = result.user_id;
       var translator_id = result.agent_emp_id;
@@ -268,13 +288,13 @@ function updateFee(conversation_id, fee, translator_fee) {
       var translatorArgs = [ translator_fee, translator_id ];
       logger.debug('[sql:]%s, %s', userSql, JSON.stringify(userArgs));
       logger.debug('[sql:]%s, %s', translatorSql, JSON.stringify(translatorArgs));
-      tttalkPool.query(userSql, userArgs, function(
+      pool.query(userSql, userArgs, function(
         err, result) {
         if (err) {
           logger.error(err);
         }
       });
-      tttalkPool.query(translatorSql, translatorArgs, function(
+      pool.query(translatorSql, translatorArgs, function(
         err, result) {
         if (err) {
           logger.error(err);
@@ -286,10 +306,7 @@ function updateFee(conversation_id, fee, translator_fee) {
 
 exports.detailConversation = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
-  var sql = 'select * from tbl_conversation where id = ?';
-  var args = [ conversation_id ];
-  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-  var query = readonlyPool.query(sql, args, function(err, data) {
+  findConversationByPK(conversation_id, function(err, result) {
       if (data && data.length > 0) {
         data = data[0];
         res.status(200).send(data);
