@@ -64,6 +64,17 @@ exports.endConversation = function(req, res, next) {
   });
 };
 
+findConversationByPK = function(conversation_id, cb) {
+  //  sql
+  var sql = 'select * from tbl_conversation  where id = ?';
+  var args = [ conversation_id ];
+
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+  var query = pool.query(sql, args, function(err, result) {
+    if(cb) cb(err, result);
+  });
+};
+
 // http://211.149.218.190:5000/charge?conversation_id=100&status=begin|end&charge_length=11
 exports.charge = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
