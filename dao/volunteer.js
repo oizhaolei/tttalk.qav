@@ -6,6 +6,9 @@ var logger = require('log4js').getLogger('user');
 var pool = mysql.createPool(config.mysql.ttt.main);
 var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
+var Gearman = require("node-gearman");
+var gearman = new Gearman(config.gearman.server, config.gearman.port);
+
 // http://211.149.218.190:5000/volunteer/online?username=v_2074
 exports.online = function(req, res, next) {
   var username = req.query.username;
@@ -54,7 +57,7 @@ exports.offline = function(req, res, next) {
   });
 };
 
-// http://211.149.218.190:5000/volunteer/qav_request?lang1=CN&lang2=EN
+// http://211.149.218.190:5000/volunteer/qav_request?lang1=CN&lang2=EN&loginid
 exports.qavRequest = function(req, res, next) {
   var user_id = req.query.loginid;
   var lang1 = req.query.lang1;
@@ -86,7 +89,18 @@ exports.qavRequest = function(req, res, next) {
             conversation_id : newId,
             data : data
           });
-          // TODO push notice to volunteers
+
+          // push notice to volunteers
+          data.forEach(function(item) {
+            message = {
+              'user_id': item.agent_emp_id,
+              'title' : 'qav_call',
+              'content_id' : newId,
+              'app_name': 'volunteer'
+            };
+
+            gearman.submitJob("push_message", JSON.stringify(message));
+          });
 
         }
       });

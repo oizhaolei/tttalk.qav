@@ -7,7 +7,7 @@
     "curlrequest": "*",
     "express": "*",
     "log4js": "*",
-    "redis": "*",
+    "node-gearman": "*",
     "request": "*",
     "mysql": "*"
   },

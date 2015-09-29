@@ -23,20 +23,20 @@ http://211.149.218.190:5000/volunteer/online?username=v_2074
 http://211.149.218.190:5000/volunteer/offline?username=v_2074
 
 # request online volunteer list, and push message
-http://211.149.218.190:5000/volunteer/qav_request?lang1=CN&lang2=EN
+http://211.149.218.190:5000/volunteer/qav_request?lang1=CN&lang2=EN&login=567
 
 # volunteer conversation begin -> busy
-http://211.149.218.190:5000/conversation?username=v_1234&status=begin&user_id=u_100&agent_emp_id=v_200&from_lang=CN&to_lang=KR
+http://211.149.218.190:5000/conversation/begin?user_id=u_100&agent_emp_id=v_200&from_lang=CN&to_lang=KR
 
 # volunteer conversation end -> online
-http://211.149.218.190:5000/conversation?username=v_1234&status=end&on_call_id=17
+http://211.149.218.190:5000/conversation/end?conversation_id=17
 
 # volunteer charge begin
-http://211.149.218.190:5000/charge?on_call_id=100&status=begin
+http://211.149.218.190:5000/charge?conversation_id=100&status=begin
 
 # volunteer charge end
-http://211.149.218.190:5000/charge?on_call_id=100&status=end
+http://211.149.218.190:5000/charge?conversation_id=100&status=end
 
 # feedback
-http://211.149.218.190:5000/feedback?on_call_id=17&user_network_star=1&user_translate_star=1
-http://211.149.218.190:5000/feedback?on_call_id=17&translator_network_star=2&translator_translate_star=2
+http://211.149.218.190:5000/feedback?conversation_id=17&user_network_star=1&user_translate_star=1
+http://211.149.218.190:5000/feedback?conversation_id=17&translator_network_star=2&translator_translate_star=2
