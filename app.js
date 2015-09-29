@@ -23,7 +23,8 @@ app.get('/volunteer/online', volunteer.online);
 app.get('/volunteer/offline', volunteer.offline);
 app.get('/volunteer/qav_request', volunteer.onlines);
 
-app.get('/conversation', qav.conversation);
+app.get('/conversation/begin', qav.beginConversation);
+app.get('/conversation/end', qav.endConversation);
 
 app.get('/charge', qav.charge);
 app.get('/feedback', qav.feedback);

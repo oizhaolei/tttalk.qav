@@ -8,12 +8,9 @@ var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
 var volunteer = require('./volunteer.js');
 
-
-// http://211.149.218.190:5000/conversation?status=begin&conversation_id=17&volunteer_id=v_2074
-// http://211.149.218.190:5000/conversation?status=end&conversation_id=17&volunteer_id=v_2074
-exports.conversation = function(req, res, next) {
+// http://211.149.218.190:5000/conversation/begin?conversation_id=17&volunteer_id=v_2074
+exports.beginConversation = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
-  var status = req.query.status;
 
   var agent_emp_id = req.query.volunteer_id;
   if (agent_emp_id.indexOf('v_') === 0) {
@@ -21,20 +18,11 @@ exports.conversation = function(req, res, next) {
   }
 
   var sql, args;
-  if (status == 'begin') {
-    //busy
-    volunteer.changeField(agent_emp_id, 'busy', 1);
+  //busy
+  volunteer.changeField(agent_emp_id, 'busy', 1);
 
-    sql = 'update tbl_conversation set agent_emp_id = ?, start_time = utc_timestamp(3), status = ? where id = ?';
-    args = [  agent_emp_id, status, conversation_id];
-
-  } else if (status == 'end') {
-    //busy
-    volunteer.changeField(agent_emp_id, 'busy', 0);
-
-    sql = 'update tbl_conversation set end_time = utc_timestamp(3), status = ? where id= ?';
-    args = [ status, conversation_id ];
-  }
+  sql = 'update tbl_conversation set agent_emp_id = ?, start_time = utc_timestamp(3), status = ? where id = ?';
+  args = [ agent_emp_id, 'begin', conversation_id ];
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
@@ -46,6 +34,33 @@ exports.conversation = function(req, res, next) {
         'success' : true
       });
     }
+  });
+};
+
+// http://211.149.218.190:5000/conversation/end?conversation_id=17
+exports.endConversation = function(req, res, next) {
+  var conversation_id = req.query.conversation_id;
+
+  findConversationByPK(conversation_id, function(err, result) {
+    var data = result[0];
+    var agent_emp_id = data.agent_emp_id;
+    //busy
+    volunteer.changeField(agent_emp_id, 'busy', 0);
+
+    var sql = 'update tbl_conversation set end_time = utc_timestamp(3), status = ? where id = ?';
+    var args = [ 'end', conversation_id ];
+
+    logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+    var query = pool.query(sql, args, function(err, result) {
+      if (err) {
+        logger.error(err);
+        next(err);
+      } else {
+        res.status(200).json({
+          'success' : true
+        });
+      }
+    });
   });
 };
 
