@@ -283,3 +283,18 @@ function updateFee(conversation_id, fee, translator_fee) {
     }
   });
 };
+
+exports.detailConversation = function(req, res, next) {
+  var conversation_id = req.query.conversation_id;
+  var sql = 'select * from tbl_conversation where id = ?';
+  var args = [ conversation_id ];
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+  var query = readonlyPool.query(sql, args, function(err, data) {
+    if (err) {
+      logger.error(err);
+      next(err);
+    } else {
+      res.status(200).send(data);
+    }
+  });
+};
