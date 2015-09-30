@@ -15,9 +15,9 @@ var volunteer = require('./volunteer.js');
 
 // http://211.149.218.190:5000/conversation/begin?conversation_id=17&agent_emp_id=2074
 exports.beginConversation = function(req, res, next) {
-  var conversation_id = req.query.agent_emp_id;
+  var conversation_id = req.query.conversation_id;
 
-  var agent_emp_id = req.query.volunteer_id;
+  var agent_emp_id = req.query.agent_emp_id;
   if (agent_emp_id.indexOf('v_') === 0) {
     agent_emp_id = agent_emp_id.substring(2);
   }

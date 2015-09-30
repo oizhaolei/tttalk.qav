@@ -50,6 +50,12 @@ http://211.149.218.190:5000/feedback?conversation_id=17&translator_network_star=
 
 
 
+TIM终端之间传递消息：
 
-TIM_CUSTOM_TYPE_CONVERSATION_TIMER = "TIM_CUSTOM_TYPE_CONVERSATION_TIMER";
-TIM_CUSTOM_TYPE_CONVERSATION_WAIT_CALL = "TIM_CUSTOM_TYPE_CONVERSATION_WAIT_CALL";
+DESC: TIM_CUSTOM_TYPE_CONVERSATION_ANSWER_CALL
+DATA: agent_emp_id=4638&conversation_id=2074&sign=8ujwerjhlajdfouopur3nk3n88812lkjld
+说明：sign的值是根据 agent_emp_id=4638&conversation_id=2074 加密而来，SALT是发送者的QAV_ID
+接受端：取得字符串和发送者的QAV_ID后，验证sign是否一致，一致的话才做业务处理
+
+
+TIM_CUSTOM_TYPE_CONVERSATION_START_CHARGE
