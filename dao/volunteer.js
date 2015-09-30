@@ -94,6 +94,7 @@ exports.qavRequest = function(req, res, next) {
         } else {
           var conversation_id = result.insertId;
           res.status(200).json({
+            voice_fee : config.voiceFee,
             conversation_id : conversation_id,
             data : volunteers
           });
