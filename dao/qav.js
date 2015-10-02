@@ -376,9 +376,9 @@ exports.conversations = function(req, res, next) {
   //
   var sql;
   if (type == 'u') {
-    sql = 'select * from tbl_conversation where user_id =? limit 20';
+    sql = 'select * from tbl_conversation where user_id =? order by id desc limit 20';
   } else {
-    sql = 'select * from tbl_conversation where agent_emp_id =? limit 20';
+    sql = 'select * from tbl_conversation where agent_emp_id =? order by id desc limit 20';
   }
 
   var args = [ loginid ];
@@ -389,9 +389,7 @@ exports.conversations = function(req, res, next) {
       logger.error(err);
       next(err);
     } else {
-      res.status(200).json({
-        data : conversations
-      });
+      res.status(200).json(conversations);
 
     }
   });
