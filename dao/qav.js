@@ -44,14 +44,15 @@ exports.beginConversation = function(req, res, next) {
       cacheClient.get(key, function(err, volunteers) {
         if (volunteers){
           volunteers.forEach(function(item) {
-            if (item.agent_emp_id === agent_emp_id) return;
+            if (item.agent_emp_id == agent_emp_id) return;
 
-            message = {
+            var message = {
               'user_id': item.agent_emp_id,
               'title' : 'qav_call_cancel',
               'content_id' : conversation_id,
               'app_name': 'volunteer'
             };
+            logger.debug('push_message: %s', JSON.stringify(message));
 
             gearman.submitJob("push_message", JSON.stringify(message));
           });
@@ -67,8 +68,8 @@ exports.endConversation = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
 
   findConversationByPK(conversation_id, function(err, result) {
-    var data = result[0];
-    var agent_emp_id = data.agent_emp_id;
+    var conversation = result[0];
+    var agent_emp_id = conversation.agent_emp_id;
     //busy
     volunteer.changeField(agent_emp_id, 'busy', 0);
 
@@ -356,8 +357,8 @@ updateFee = function(conversation_id, fee, translator_fee) {
   });
 };
 
-exports.detailConversation = function(req, res, next) {
-  var conversation_id = req.query.conversation_id;
+exports.conversation = function(req, res, next) {
+  var conversation_id = req.params.id;
   findConversationByPK(conversation_id, function(err, data) {
       if (data && data.length > 0) {
         data = data[0];
@@ -365,5 +366,33 @@ exports.detailConversation = function(req, res, next) {
       } else {
         next(err);
       }
+  });
+};
+
+exports.conversations = function(req, res, next) {
+  var type = req.query.type;
+  var loginid = req.query.loginid;
+
+  //
+  var sql;
+  if (type == 'u') {
+    sql = 'select * from tbl_conversation where user_id =? limit 20';
+  } else {
+    sql = 'select * from tbl_conversation where agent_emp_id =? limit 20';
+  }
+
+  var args = [ loginid ];
+
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+  var query = readonlyPool.query(sql, args, function(err, conversations) {
+    if (err) {
+      logger.error(err);
+      next(err);
+    } else {
+      res.status(200).json({
+        data : conversations
+      });
+
+    }
   });
 };

@@ -25,7 +25,8 @@ app.get('/volunteer/qav_request', volunteer.qavRequest);
 
 app.get('/conversation/begin', qav.beginConversation);
 app.get('/conversation/end', qav.endConversation);
-app.get('/conversation/detail', qav.detailConversation);
+app.get('/conversations/:id', qav.conversation);
+app.get('/conversations', qav.conversations);
 
 app.get('/charge/begin', qav.beginCharge);
 app.get('/charge/end', qav.endCharge);

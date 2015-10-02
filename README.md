@@ -59,3 +59,6 @@ DATA: agent_emp_id=4638&conversation_id=2074&sign=8ujwerjhlajdfouopur3nk3n88812l
 
 
 TIM_CUSTOM_TYPE_CONVERSATION_START_CHARGE
+
+
+贴图，没有认证也应该能进入看到
