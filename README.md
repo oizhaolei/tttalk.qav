@@ -47,9 +47,9 @@ http://211.149.218.190:5000/charge/update?conversation_id=100&charge_length=11
 http://211.149.218.190:5000/charge/confirm?conversation_id=100
 
 # user feedback
-http://211.149.218.190:5000/feedback?conversation_id=17&user_network_star=1&user_translate_star=1
+http://211.149.218.190:5000/conversation/user_feedback?id=17&network_star=1&peer_star=1&comment=XXX
 # volunteer feedback
-http://211.149.218.190:5000/feedback?conversation_id=17&translator_network_star=2&translator_translate_star=2
+http://211.149.218.190:5000/conversation/translator_feedback?id=17&network_star=2&peer_star=2&comment=XXX
 
 
 

@@ -33,7 +33,8 @@ app.get('/charge/end', qav.endCharge);
 app.get('/charge/update', qav.updateCharge);
 app.get('/charge/confirm', qav.confirmCharge);
 
-app.get('/feedback', qav.feedback);
+app.get('/conversation/user_feedback', qav.user_feedback);
+app.get('/conversation/translator_feedback', qav.translator_feedback);
 app.get('/feedbacks', qav.feedbacks);
 
 var server = app.listen(config.app_port, function() {

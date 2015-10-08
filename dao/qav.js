@@ -190,121 +190,63 @@ exports.confirmCharge = function(req, res, next) {
 
 };
 
-findConversationFeedbackByPK = function(conversation_id, cb) {
-  //  sql
-  var sql = 'select * from tbl_conversation_feedback  where conversation_id = ?';
-  var args = [ conversation_id ];
+// http://211.149.218.190:5000/conversation/user_feedback?id=17&network_star=1&peer_star=1&comment=XXX
+exports.user_feedback = function(req, res, next) {
+  var conversation_id = req.query.id;
+  var network_star = req.query.network_star;
+  var peer_star = req.query.peer_star;
+  var comment = req.query.comment;
 
-  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-  var query =readonlyPool.query(sql, args, function(err, result) {
-    if(cb) cb(err, result);
-  });
-};
+  var isUser = true;
+  var user_id = req.query.loginid;
 
-// http://211.149.218.190:5000/feedback?conversation_id=17&user_network_star=1&user_translator_star=1
-// http://211.149.218.190:5000/feedback?conversation_id=17&translator_network_star=2&translator_user_star=2
-exports.feedback = function(req, res, next) {
-  var conversation_id = req.query.conversation_id;
-  var user_network_star = req.query.user_network_star;
-  var user_translator_star = req.query.user_translator_star;
-  var user_comment = req.query.user_comment;
-  var translator_network_star = req.query.translator_network_star;
-  var translator_user_star = req.query.translator_user_star;
-  var translator_comment = req.query.translator_comment;
-
-  findConversationFeedbackByPK(conversation_id, function(err, result) {
+  feedback(conversation_id, user_id, isUser, network_star, peer_star, comment, function(err, result) {
     if (err) {
       logger.error(err);
       next(err);
     } else {
-      var sql, args;
-      if (result && result.length > 0) {
-        var updateSql = 'update tbl_conversation_feedback set ';
-        var updateArgs = [];
-        if (typeof (user_network_star) != "undefined") {
-          updateArgs.push(user_network_star);
-          updateSql += ' user_network_star = ?,';
-        }
-        if (typeof (user_translator_star) != "undefined") {
-          updateArgs.push(user_translator_star);
-          updateSql += ' user_translator_star = ?,';
-        }
-        if (typeof (user_comment) != "undefined") {
-          updateArgs.push(user_comment);
-          updateSql += ' user_comment = ?,';
-        }
-        if (typeof (translator_network_star) != "undefined") {
-          updateArgs.push(translator_network_star);
-          updateSql += ' translator_network_star = ?,';
-        }
-        if (typeof (translator_user_star) != "undefined") {
-          updateArgs.push(translator_user_star);
-          updateSql += ' translator_user_star = ?,';
-        }
-        if (typeof (translator_comment) != "undefined") {
-          updateArgs.push(translator_comment);
-          updateSql += ' translator_comment = ?,';
-        }
-        updateArgs.push(conversation_id);
-        updateSql += ' create_date=utc_timestamp(3) where conversation_id = ?';
-
-        logger.debug('[sql:]%s, %s', updateSql, JSON.stringify(updateArgs));
-        sql = updateSql;
-        args = updateArgs;
-      } else {
-        var insertSql = 'insert into tbl_conversation_feedback (';
-        var insertSql2 = ' conversation_id, create_date) values (';
-        var insertArgs = [];
-        if (typeof (user_network_star) != "undefined") {
-          insertSql += ' user_network_star,';
-          insertArgs.push(user_network_star);
-          insertSql2 += '?, ';
-        }
-        if (typeof (user_translator_star) != "undefined") {
-          insertSql += ' user_translator_star,';
-          insertArgs.push(user_translator_star);
-          insertSql2 += '?, ';
-        }
-        if (typeof (user_comment) != "undefined") {
-          insertSql += ' user_comment,';
-          insertArgs.push(user_comment);
-          insertSql2 += '?, ';
-        }
-        if (typeof (translator_network_star) != "undefined") {
-          insertSql += ' translator_network_star,';
-          insertArgs.push(translator_network_star);
-          insertSql2 += '?, ';
-        }
-        if (typeof (translator_user_star) != "undefined") {
-          insertSql += ' translator_user_star,';
-          insertArgs.push(translator_user_star);
-          insertSql2 += '?, ';
-        }
-        if (typeof (translator_comment) != "undefined") {
-          insertSql += ' translator_comment,';
-          insertArgs.push(translator_comment);
-          insertSql2 += '?, ';
-        }
-        insertArgs.push(conversation_id);
-        insertSql2 += '?, utc_timestamp(3))';
-
-        logger.debug('[sql:]%s, %s', insertSql + insertSql2, JSON
-                     .stringify(insertArgs));
-        sql = insertSql + insertSql2;
-        args = insertArgs;
-      }
-      var query = pool.query(sql, args, function(err, result) {
-        if (err) {
-          logger.error(err);
-          next(err);
-        } else {
-          res.status(200).send({
-            success : true
-          });
-        }
+      res.status(200).send({
+        success : true
       });
     }
   });
+};
+
+// http://211.149.218.190:5000/conversation/translator_feedback?id=17&network_star=2&peer_star=2&comment=XXX
+exports.translator_feedback = function(req, res, next) {
+  var conversation_id = req.query.id;
+  var network_star = req.query.network_star;
+  var peer_star = req.query.peer_star;
+  var comment = req.query.comment;
+
+  var isUser = false;
+  var agent_emp_id = req.query.loginid;
+
+  feedback(conversation_id, agent_emp_id, isUser, network_star, peer_star, comment, function(err, result) {
+    if (err) {
+      logger.error(err);
+      next(err);
+    } else {
+      res.status(200).send({
+        success : true
+      });
+    }
+  });
+};
+
+feedback = function(conversation_id, uid, isUser, network_star, peer_star, comment, cb) {
+  var sql = 'update tbl_conversation set ';
+  var args = [network_star, peer_star, comment, conversation_id, uid];
+
+  if (isUser) {
+    sql += ' user_network_star = ?, user_translator_star = ?, user_comment = ?, create_date=utc_timestamp(3) where id = ? and user_id =?';
+  } else {
+    sql += ' translator_network_star = ?, translator_user_star = ?, translator_comment = ?, create_date=utc_timestamp(3) where id = ? and emp_agent_id=?';
+  }
+
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+
+  var query = pool.query(sql, args, cb);
 };
 
 // http://211.149.218.190:5000/feedbacks?type=1&agent_emp_id=2071
