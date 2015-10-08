@@ -85,8 +85,8 @@ exports.qavRequest = function(req, res, next) {
       logger.error(err);
       next(err);
     } else {
-      var sqli = 'insert into tbl_conversation (user_id, from_lang, to_lang, create_id, create_date) values(?, ?, ?, ?, utc_timestamp(3))';
-      var argsi = [ user_id, lang1, lang2, user_id ];
+      var sqli = 'insert into tbl_conversation (user_id, from_lang, to_lang, create_date) values(?, ?, ?, utc_timestamp(3))';
+      var argsi = [ user_id, lang1, lang2];
       var query = pool.query(sqli, argsi, function(err, result) {
         if (err) {
           logger.error(err);
