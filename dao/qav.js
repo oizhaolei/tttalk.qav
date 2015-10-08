@@ -241,7 +241,7 @@ feedback = function(conversation_id, uid, isUser, network_star, peer_star, comme
   if (isUser) {
     sql += ' user_network_star = ?, user_translator_star = ?, user_comment = ?, create_date=utc_timestamp(3) where id = ? and user_id =?';
   } else {
-    sql += ' translator_network_star = ?, translator_user_star = ?, translator_comment = ?, create_date=utc_timestamp(3) where id = ? and emp_agent_id=?';
+    sql += ' translator_network_star = ?, translator_user_star = ?, translator_comment = ?, create_date=utc_timestamp(3) where id = ? and agent_emp_id=?';
   }
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
