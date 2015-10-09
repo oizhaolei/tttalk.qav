@@ -18,6 +18,51 @@ app.all('/', function(req, res) {
   res.json({});
 });
 
+/**
+ * check sign
+ **/
+checkSign = function(req, res, next) {
+  logger.info();
+  logger.info('----------- New Request ---------');
+  logger.info('url = %s ', req.originalUrl);
+  logger.info('query = %s', JSON.stringify(req.query));
+  logger.info('body = %s', JSON.stringify(req.body));
+  logger.info('---------------------------------');
+  var loginid = req.query.loginid;
+  var sign = req.query.sign;
+  if (loginid !== null && sign !== null ) {
+    var keyArray = [];
+    for(var param in req.query) {
+      keyArray.push(param);
+    }
+    keyArray.sort();
+
+    var paramArray = [];
+    paramArray.push(loginid);
+    for(var i in keyArray) {
+      var key = keyArray[i];
+      var val = req.query[key];
+      if (key != 'sign') {
+        paramArray.push(key + val);
+      }
+    }
+    paramArray.push(config.tttalk.secret);
+    var shaSource = paramArray.join("");
+    var shasum    = crypto.createHash('sha1');
+    var newSign   = shasum.update(shaSource).digest('hex');
+    if (sign == newSign) {
+      next();
+    } else {
+      logger.debug('check sign error: %s, %s, %s', sign, shaSource, newSign);
+      next(("invalid sign"));
+    }
+  } else {
+    next(("invalid params"));
+  }
+};
+app.use(checkSign);
+
+
 //volunteer
 app.get('/volunteer/online', volunteer.online);
 app.get('/volunteer/offline', volunteer.offline);

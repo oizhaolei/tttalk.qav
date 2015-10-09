@@ -237,40 +237,16 @@ exports.translator_feedback = function(req, res, next) {
 
 feedback = function(conversation_id, uid, isUser, network_star, peer_star, comment, cb) {
   var sql = 'update tbl_conversation set ';
-  var args = [network_star, peer_star, comment, conversation_id, uid];
-
   if (isUser) {
-    sql += ' user_network_star = ?, user_translator_star = ?, user_comment = ?, create_date=utc_timestamp(3) where id = ? and user_id =?';
+    sql += ' user_network_star = ?, user_translator_star = ?, user_comment = ?, user_comment_date=utc_timestamp(3) where id = ? and user_id =?';
   } else {
-    sql += ' translator_network_star = ?, translator_user_star = ?, translator_comment = ?, create_date=utc_timestamp(3) where id = ? and agent_emp_id=?';
+    sql += ' translator_network_star = ?, translator_user_star = ?, translator_comment = ?, translator_comment_date=utc_timestamp(3) where id = ? and agent_emp_id=?';
   }
+  var args = [network_star, peer_star, comment, conversation_id, uid];
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
 
   var query = pool.query(sql, args, cb);
-};
-
-// http://211.149.218.190:5000/feedbacks?type=1&agent_emp_id=2071
-exports.feedbacks = function(req, res, next) {
-  var args = [];
-  var sqlWhere = "";
-  var type = req.query.type;// 1:user2:tranlsator
-  if (type == 1) {
-    var agent_emp_id = req.query.agent_emp_id;
-    args.push(agent_emp_id);
-    sqlWhere += " a.agent_emp_id = ?";
-  } else {
-    var user_id = req.query.user_id;
-    args.push(user_id);
-    sqlWhere += " a.user_id = ?";
-  }
-  var sql = 'select a.*, b.user_network_star, b.user_translator_star, b.user_comment, b.translator_network_star, b.translator_user_star, b.translator_comment from tbl_conversation a left join tbl_conversation_feedback b on a.id = b.conversation_id where' + sqlWhere + ' order by a.id desc limit ' + config.rowsPerPage;
-
-  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-  readonlyPool.query(sql, args, function(err, feedbacks) {
-    logger.debug(JSON.stringify(feedbacks));
-    res.status(200).send(feedbacks);
-  });
 };
 
 updateFee = function(conversation_id, fee, translator_fee) {
