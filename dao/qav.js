@@ -142,9 +142,10 @@ exports.endCharge = function(req, res, next) {
 exports.updateCharge = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
   var charge_length = req.query.charge_length;
-
-  var sql = 'update tbl_conversation set charge_length = ? where id= ?';
-  var args = [ charge_length, conversation_id ];
+  var fee = config.voiceFee * charge_length;
+  var translator_fee = config.voiceTranslatorFee * charge_length;
+  var sql = 'update tbl_conversation set charge_length = ?, fee = ?, translator_fee = ? where id= ?';
+  var args = [ charge_length, fee, translator_fee, conversation_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
     if (err) {
@@ -169,8 +170,8 @@ exports.confirmCharge = function(req, res, next) {
       // 计费方法实现{}
       var fee = config.voiceFee * charge_length;
       var translator_fee = config.voiceTranslatorFee * charge_length;
-      var sql = 'update tbl_conversation set status = ?, fee = ?, translator_fee = ? where id= ?';
-      var args = [ 'charged', fee, translator_fee, conversation_id ];
+      var sql = 'update tbl_conversation set status = ? where id= ?';
+      var args = [ 'charged', conversation_id ];
       logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
       var query = pool.query(sql, args, function(err, result) {
         if (err) {
