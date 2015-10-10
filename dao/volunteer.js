@@ -19,7 +19,7 @@ exports.online = function(req, res, next) {
     agent_emp_id = agent_emp_id.substring(2);
   }
   // merge sql
-  var sql = 'insert into qav_devices (agent_emp_id, last_online_time, status, create_date) values(?, utc_timestamp(3), "online", utc_timestamp(3)) ON DUPLICATE KEY UPDATE last_online_time = utc_timestamp(3), status="online"';
+  var sql = 'insert into qav_devices (agent_emp_id, last_online_time, status, create_date) values(?, utc_timestamp(3), "online", utc_timestamp(3)) ON DUPLICATE KEY UPDATE busy=0, last_online_time = utc_timestamp(3), status="online"';
   var args = [ agent_emp_id ];
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
@@ -52,8 +52,8 @@ exports.offline = function(req, res, next) {
   }
 
   // update sql
-  var sql = 'update qav_devices set status = ?, busy = ? where agent_emp_id = ?';
-  var args = [ 'offline', 0, agent_emp_id];
+  var sql = 'update qav_devices set status = ?, busy = 0 where agent_emp_id = ?';
+  var args = [ 'offline', agent_emp_id];
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {

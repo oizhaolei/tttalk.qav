@@ -99,21 +99,21 @@ exports.endConversation = function(req, res, next) {
     var agent_emp_id = conversation.agent_emp_id;
     //busy
     volunteer.changeField(agent_emp_id, 'busy', 0);
+  });
 
-    var sql = 'update tbl_conversation set end_time = utc_timestamp(3), status = ? where id = ?';
-    var args = [ 'end', conversation_id ];
+  var sql = 'update tbl_conversation set end_time = utc_timestamp(3), status = ? where id = ?';
+  var args = [ 'end', conversation_id ];
 
-    logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-    var query = pool.query(sql, args, function(err, result) {
-      if (err) {
-        logger.error(err);
-        next(err);
-      } else {
-        res.status(200).json({
-          'success' : true
-        });
-      }
-    });
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+  var query = pool.query(sql, args, function(err, result) {
+    if (err) {
+      logger.error(err);
+      next(err);
+    } else {
+      res.status(200).json({
+        'success' : true
+      });
+    }
   });
 };
 
@@ -149,6 +149,14 @@ exports.beginCharge = function(req, res, next) {
 // http://211.149.218.190:5000/charge/end?conversation_id=100&charge_length=11
 exports.endCharge = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
+
+  findConversationByPK(conversation_id, function(err, result) {
+    var conversation = result[0];
+    var agent_emp_id = conversation.agent_emp_id;
+    //busy
+    volunteer.changeField(agent_emp_id, 'busy', 0);
+  });
+
   var charge_length = req.query.charge_length;
   var sql = 'update tbl_conversation set status = ?, charge_length = ?, end_charge_time = utc_timestamp(3) where id= ?';
   var args = [ 'chargeend', charge_length, conversation_id ];
