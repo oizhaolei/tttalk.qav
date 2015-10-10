@@ -1,7 +1,7 @@
 var crypto = require('crypto');
 var config = require('./config.js').config;
 var volunteer = require('./dao/volunteer.js');
-var qav = require('./dao/qav.js');
+var qav = require('./dao/conversation.js');
 var logger = require('log4js').getLogger('app');
 
 var express = require('express');
@@ -62,11 +62,12 @@ checkSign = function(req, res, next) {
 };
 app.use(checkSign);
 
-
 //volunteer
 app.get('/volunteer/online', volunteer.online);
 app.get('/volunteer/offline', volunteer.offline);
-app.get('/volunteer/qav_request', volunteer.qavRequest);
+
+app.get('/volunteer/qav_request', qav.requestConversation);//TO DELETE
+app.get('/conversation/request', qav.requestConversation);
 
 app.get('/conversation/begin', qav.beginConversation);
 app.get('/conversation/cancel', qav.cancelConversation);
