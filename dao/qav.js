@@ -63,6 +63,33 @@ exports.beginConversation = function(req, res, next) {
   });
 };
 
+// http://211.149.218.190:5000/conversation/cancel?conversation_id=17
+exports.cancelConversation = function(req, res, next) {
+  var conversation_id = req.query.conversation_id;
+
+  findConversationByPK(conversation_id, function(err, result) {
+    var conversation = result[0];
+    var agent_emp_id = conversation.agent_emp_id;
+    //busy
+    volunteer.changeField(agent_emp_id, 'busy', 0);
+
+    var sql = 'update tbl_conversation set status = ? where id = ?';
+    var args = [ 'cancelrequest', conversation_id ];
+
+    logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+    var query = pool.query(sql, args, function(err, result) {
+      if (err) {
+        logger.error(err);
+        next(err);
+      } else {
+        res.status(200).json({
+          'success' : true
+        });
+      }
+    });
+  });
+};
+
 // http://211.149.218.190:5000/conversation/end?conversation_id=17
 exports.endConversation = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
