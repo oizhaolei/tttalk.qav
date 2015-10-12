@@ -193,6 +193,7 @@ exports.endCharge = function(req, res, next) {
 exports.updateCharge = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
   var charge_length = req.query.charge_length;
+  
   var fee = config.voiceFee * charge_length;
   var translator_fee = config.voiceTranslatorFee * charge_length;
   var sql = 'update tbl_conversation set charge_length = ?, fee = ?, translator_fee = ? where id= ?';
@@ -217,29 +218,34 @@ exports.confirmCharge = function(req, res, next) {
     if (result && result.length > 0) {
       var conversation = result[0];
 
-      var charge_length = conversation.charge_length;
-      // 计费方法实现{}
-      var fee = config.voiceFee * charge_length;
-      var translator_fee = config.voiceTranslatorFee * charge_length;
-      var sql = 'update tbl_conversation set status = ? where id= ?';
-      var args = [ 'charged', conversation_id ];
-      logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-      var query = pool.query(sql, args, function(err, result) {
-        if (err) {
-          logger.error(err);
-          next(err);
-        } else {
-          // 扣除用户费用
-          // 翻译者增加翻译费
-          updateFee(conversation_id, fee, translator_fee);
-          res.status(200).send({
-            success : true
-          });
-        }
+      _conversationCharge(conversation, function(){
+        res.status(200).send({
+          success : true
+        });
       });
     }
   });
+};
 
+_conversationCharge = function(conversation, cb) {
+  var charge_length = conversation.charge_length;
+  // 计费方法实现{}
+  var fee = config.voiceFee * charge_length;
+  var translator_fee = config.voiceTranslatorFee * charge_length;
+  var sql = 'update tbl_conversation set status = ? where id= ?';
+  var args = [ 'charged', conversation_id ];
+  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+  var query = pool.query(sql, args, function(err, result) {
+    if (err) {
+      logger.error(err);
+      next(err);
+    } else {
+      // 扣除用户费用
+      // 翻译者增加翻译费
+      _updatefee(conversation_id, fee, translator_fee);
+      if (cb) cb();
+    }
+  });
 };
 
 // http://211.149.218.190:5000/conversation/user_feedback?id=17&network_star=1&peer_star=1&comment=XXX
@@ -300,7 +306,7 @@ feedback = function(conversation_id, uid, isUser, network_star, peer_star, comme
   var query = pool.query(sql, args, cb);
 };
 
-updateFee = function(conversation_id, fee, translator_fee) {
+_updatefee = function(conversation_id, fee, translator_fee) {
   findConversationByPK(conversation_id, function(err, result) {
     if (result && result.length > 0) {
       var conversation = result[0];
@@ -351,6 +357,33 @@ exports.conversations = function(req, res, next) {
       next(err);
     } else {
       res.status(200).json(conversations);
+
+    }
+  });
+};
+
+/**
+ * 定期处理batch
+ */
+exports.batch_check_uncharged_conversation = function(req, res, next) {
+  //
+  var dSql = 'select date_sub(utc_timestamp(3), INTERVAL 24 hour) startDate, date_sub(utc_timestamp(3), INTERVAL 0 hour) endDate';
+  readonlyPool.query(dSql, function(err, result) {
+    if (result && result.length > 0) {
+      var row = result[0];
+      var startDate = row.startDate;
+      var endDate = row.endDate;
+      var sql = 'select * from tbl_conversation where charge_length > 0 and status in ("end", "chargeend") and create_date between ? and ? limit 20';
+      var args = [ startDate, endDate ];
+
+      logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+      var query = readonlyPool.query(sql, args, function(err, conversations) {
+        logger.debug('conversations: %s', JSON.stringify(conversations));
+
+        conversations.forEach(function(conversation) {
+          _conversationCharge(conversation);
+        });
+      });
 
     }
   });

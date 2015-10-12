@@ -45,26 +45,3 @@ exports.update_agent_emp_balance = function(agent_emp_id, delta) {
     }
   });
 };
-
-/**
- * 定期处理batch
- */
-exports.batch_check_uncharged_conversation = function(req, res, next) {
-  //
-  var dSql = 'select date_sub(utc_timestamp(3), INTERVAL 24 hour) startDate, date_sub(utc_timestamp(3), INTERVAL 0 hour) endDate';
-  readonlyPool.query(dSql, function(err, result) {
-    if (result && result.length > 0) {
-      var row = result[0];
-      var startDate = row.startDate;
-      var endDate = row.endDate;
-      var sql = 'select * from tbl_conversation where charge_length > 0 and status in ("end", "chargeend") and create_date between ? and ? limit 20';
-      var args = [ startDate, endDate ];
-
-      logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-      var query = readonlyPool.query(sql, args, function(err, conversations) {
-        logger.debug('conversations: %s', JSON.stringify(conversations));
-      });
-
-    }
-  });
-};
