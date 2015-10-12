@@ -7,7 +7,7 @@ var pool = mysql.createPool(config.mysql.ttt.main);
 var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
 var volunteer = require('./volunteer.js');
-var fee = require('./fee.js');
+var fee_dao = require('./fee_dao.js');
 
 
 // http://211.149.218.190:5000/conversion/request?lang1=CN&lang2=EN&loginin=4638
@@ -228,6 +228,7 @@ exports.confirmCharge = function(req, res, next) {
 };
 
 _conversationCharge = function(conversation, cb) {
+  var conversation_id = conversation.id;
   var charge_length = conversation.charge_length;
   // 计费方法实现{}
   var fee = config.voiceFee * charge_length;
@@ -314,12 +315,12 @@ _updatefee = function(conversation_id, fee, translator_fee) {
       var agent_emp_id = conversation.agent_emp_id;
 
       //user
-      fee.insert_user_charge(user_id, fee * -1);
-      fee.update_user_balance(user_id, fee * -1);
+      fee_dao.insert_user_charge(user_id, fee * -1);
+      fee_dao.update_user_balance(user_id, fee * -1);
 
       //agent_emp
-      fee.insert_agent_emp_charge(agent_emp_id, translator_fee);
-      fee.update_agent_emp_balance(agent_emp_id, translator_fee);
+      fee_dao.insert_agent_emp_charge(agent_emp_id, translator_fee);
+      fee_dao.update_agent_emp_balance(agent_emp_id, translator_fee);
     }
   });
 };

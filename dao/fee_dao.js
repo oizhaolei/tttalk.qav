@@ -8,10 +8,6 @@ var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
 var cacheClient = require('../lib/ocs');
 
-var volunteer = require('./volunteer.js');
-var fee = require('./fee.js');
-
-
 exports.insert_user_charge = function(user_id, delta) {
   //TODO
 };
