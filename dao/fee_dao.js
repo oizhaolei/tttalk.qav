@@ -19,7 +19,7 @@ exports.update_user_balance = function(user_id, delta) {
     if (err) {
       logger.error(err);
     } else {
-      var user_key = "tbl_user_" + userid;
+      var user_key = "tbl_user_" + user_id;
       cacheClient.delete(user_key);
     }
   });
