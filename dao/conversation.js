@@ -1,12 +1,13 @@
 var util = require('util');
 var config = require("../config.js").config;
 var mysql = require('mysql');
-var logger = require('log4js').getLogger('qav');
+var logger = require('log4js').getLogger('conversation.js');
 
 var pool = mysql.createPool(config.mysql.ttt.main);
 var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
 var volunteer = require('./volunteer.js');
+var fee = require('./fee.js');
 
 
 // http://211.149.218.190:5000/conversion/request?lang1=CN&lang2=EN&loginin=4638
@@ -38,7 +39,6 @@ exports.requestConversation = function(req, res, next) {
         } else {
           var conversation_id = result.insertId;
           res.status(200).json({
-            voice_fee : config.voiceFee,
             conversation_id : conversation_id,
             data : volunteers
           });
@@ -305,24 +305,15 @@ updateFee = function(conversation_id, fee, translator_fee) {
     if (result && result.length > 0) {
       var conversation = result[0];
       var user_id = conversation.user_id;
-      var translator_id = conversation.agent_emp_id;
+      var agent_emp_id = conversation.agent_emp_id;
 
-      var userSql = 'update tbl_user set balance = balance - ?, update_date = utc_timestamp(3) where id = ?';
-      var userArgs = [ fee, user_id ];
-      var translatorSql = 'update tbl_agent_emp set balance = balance + ?, update_date = utc_timestamp(3) where id = ?';
-      var translatorArgs = [ translator_fee, translator_id ];
-      logger.debug('[sql:]%s, %s', userSql, JSON.stringify(userArgs));
-      logger.debug('[sql:]%s, %s', translatorSql, JSON.stringify(translatorArgs));
-      pool.query(userSql, userArgs, function(err, result) {
-        if (err) {
-          logger.error(err);
-        }
-      });
-      pool.query(translatorSql, translatorArgs, function(err, result) {
-        if (err) {
-          logger.error(err);
-        }
-      });
+      //user
+      fee.insert_user_charge(user_id, fee * -1);
+      fee.update_user_balance(user_id, fee * -1);
+
+      //agent_emp
+      fee.insert_agent_emp_charge(agent_emp_id, translator_fee);
+      fee.update_agent_emp_balance(agent_emp_id, translator_fee);
     }
   });
 };

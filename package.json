@@ -8,6 +8,7 @@
     "express": "*",
     "log4js": "*",
     "aliyun-sdk": "*",
+    "memcached": "*",
     "request": "*",
     "mysql": "*"
   },
