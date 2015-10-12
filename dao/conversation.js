@@ -383,6 +383,7 @@ exports.batch_check_uncharged_conversation = function(req, res, next) {
         conversations.forEach(function(conversation) {
           _conversationCharge(conversation);
         });
+        res.status(200).json(conversations);
       });
 
     }
