@@ -176,7 +176,7 @@ exports.endCharge = function(req, res, next) {
   });
 
   var charge_length = req.query.charge_length;
-  var sql = 'update tbl_conversation set status = "chargeend", charge_length = ?, end_charge_time = utc_timestamp(3) where id= ? and status in ("end", "chargebegin")';
+  var sql = 'update tbl_conversation set status = "chargeend", charge_length = ?, end_charge_time = utc_timestamp(3) where id= ? and status in ("begin", "end", "chargebegin")';
   var args = [ charge_length, conversation_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
@@ -195,7 +195,7 @@ exports.endCharge = function(req, res, next) {
 exports.updateCharge = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
   var charge_length = req.query.charge_length;
-  
+
   var fee = config.voiceFee * charge_length;
   var translator_fee = config.voiceTranslatorFee * charge_length;
   var sql = 'update tbl_conversation set charge_length = ?, fee = ?, translator_fee = ? where id= ?';
@@ -220,7 +220,7 @@ exports.confirmCharge = function(req, res, next) {
     if (result && result.length > 0) {
       var conversation = result[0];
 
-      _conversationCharge(conversation, function() {
+      _conversationCharge(conversation, function(err) {
         res.status(200).send({
           success : true
         });
@@ -268,7 +268,6 @@ _conversationCharge = function(conversation, callback) {
       var query = pool.query(sql, args, function(err, result) {
         if (err || result.affectedRows === 0) {
           logger.error(err);
-          next(err);
         }
         if (callback) callback(err);
       });
@@ -387,7 +386,7 @@ exports.conversations = function(req, res, next) {
  */
 exports.batch_check_uncharged_conversation = function(req, res, next) {
   //
-  var dSql = 'select date_sub(utc_timestamp(3), INTERVAL 24 hour) startDate, date_sub(utc_timestamp(3), INTERVAL 0 hour) endDate';
+  var dSql = 'select date_sub(utc_timestamp(3), INTERVAL 24 hour) startDate, date_sub(utc_timestamp(3), INTERVAL 1 hour) endDate';
   readonlyPool.query(dSql, function(err, result) {
     if (result && result.length > 0) {
       var row = result[0];
