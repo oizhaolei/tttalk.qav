@@ -8,10 +8,11 @@ var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
 var cacheClient = require('../lib/ocs');
 
-exports.insert_user_charge = function(user_id, delta) {
+exports.insert_user_charge = function(user_id, delta, callback) {
   //TODO
+  if (callback) callback(null);
 };
-exports.update_user_balance = function(user_id, delta) {
+exports.update_user_balance = function(user_id, delta, callback) {
   var sql = 'update tbl_user set balance = balance + ?, update_date = utc_timestamp(3) where id = ?';
   var args = [ delta, user_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
@@ -22,13 +23,15 @@ exports.update_user_balance = function(user_id, delta) {
       var user_key = "tbl_user_" + user_id;
       cacheClient.delete(user_key);
     }
+    if (callback) callback(err);
   });
 };
 
-exports.insert_agent_emp_charge = function(agent_emp_id, delta) {
+exports.insert_agent_emp_charge = function(agent_emp_id, delta, callback) {
   //TODO
+  if (callback) callback(null);
 };
-exports.update_agent_emp_balance = function(agent_emp_id, delta) {
+exports.update_agent_emp_balance = function(agent_emp_id, delta, callback) {
   var sql = 'update tbl_agent_emp set balance = balance + ?, update_date = utc_timestamp(3) where id = ?';
   var args = [ delta, agent_emp_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
@@ -39,5 +42,6 @@ exports.update_agent_emp_balance = function(agent_emp_id, delta) {
       var agent_emp_key = "tbl_agent_emp_by_id_" + agent_emp_id;
       cacheClient.delete(agent_emp_key);
     }
+    if (callback) callback(err);
   });
 };

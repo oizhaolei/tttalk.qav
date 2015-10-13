@@ -3,6 +3,8 @@ var config = require("../config.js").config;
 var mysql = require('mysql');
 var logger = require('log4js').getLogger('conversation.js');
 
+var async = require('async');
+
 var pool = mysql.createPool(config.mysql.ttt.main);
 var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
@@ -63,12 +65,12 @@ exports.beginConversation = function(req, res, next) {
   //busy
   volunteer.changeField(agent_emp_id, 'busy', 1);
 
-  sql = 'update tbl_conversation set agent_emp_id = ?, start_time = utc_timestamp(3), status = ? where id = ?';
-  args = [ agent_emp_id, 'begin', conversation_id ];
+  sql = 'update tbl_conversation set agent_emp_id = ?, start_time = utc_timestamp(3), status = "begin" where id = ? and status in ("request")';
+  args = [ agent_emp_id, conversation_id ];
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
-    if (err) {
+    if (err || result.affectedRows === 0) {
       logger.error(err);
       next(err);
     } else {
@@ -89,12 +91,12 @@ exports.cancelConversation = function(req, res, next) {
     //busy
     volunteer.changeField(agent_emp_id, 'busy', 0);
 
-    var sql = 'update tbl_conversation set status = ? where id = ?';
-    var args = [ 'cancelrequest', conversation_id ];
+    var sql = 'update tbl_conversation set status = "cancelrequest" where id = ? and status in ("request")';
+    var args = [ conversation_id ];
 
     logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
     var query = pool.query(sql, args, function(err, result) {
-      if (err) {
+      if (err || result.affectedRows === 0) {
         logger.error(err);
         next(err);
       } else {
@@ -117,12 +119,12 @@ exports.endConversation = function(req, res, next) {
     volunteer.changeField(agent_emp_id, 'busy', 0);
   });
 
-  var sql = 'update tbl_conversation set end_time = utc_timestamp(3), status = ? where id = ?';
-  var args = [ 'end', conversation_id ];
+  var sql = 'update tbl_conversation set end_time = utc_timestamp(3), status = "end" where id = ? and status in ("begin", "chargebegin", "chargeend")';
+  var args = [ conversation_id ];
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
-    if (err) {
+    if (err || result.affectedRows === 0) {
       logger.error(err);
       next(err);
     } else {
@@ -133,25 +135,25 @@ exports.endConversation = function(req, res, next) {
   });
 };
 
-findConversationByPK = function(conversation_id, cb) {
+findConversationByPK = function(conversation_id, callback) {
   //  sql
   var sql = 'select * from tbl_conversation  where id = ?';
   var args = [ conversation_id ];
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = readonlyPool.query(sql, args, function(err, result) {
-    if(cb) cb(err, result);
+    if(callback) callback(err, result);
   });
 };
 
 // http://211.149.218.190:5000/charge/begin?conversation_id=100
 exports.beginCharge = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
-  var sql = 'update tbl_conversation set status = ?, start_charge_time = utc_timestamp(3) where id= ?';
-  var args = [ 'chargebegin', conversation_id ];
+  var sql = 'update tbl_conversation set status = "chargebegin", start_charge_time = utc_timestamp(3) where id= ? and status in ("begin")';
+  var args = [ conversation_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
-    if (err) {
+    if (err || result.affectedRows === 0) {
       logger.error(err);
       next(err);
     } else {
@@ -174,11 +176,11 @@ exports.endCharge = function(req, res, next) {
   });
 
   var charge_length = req.query.charge_length;
-  var sql = 'update tbl_conversation set status = ?, charge_length = ?, end_charge_time = utc_timestamp(3) where id= ?';
-  var args = [ 'chargeend', charge_length, conversation_id ];
+  var sql = 'update tbl_conversation set status = "chargeend", charge_length = ?, end_charge_time = utc_timestamp(3) where id= ? and status in ("end", "chargebegin")';
+  var args = [ charge_length, conversation_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
-    if (err) {
+    if (err || result.affectedRows === 0) {
       logger.error(err);
       next(err);
     } else {
@@ -218,7 +220,7 @@ exports.confirmCharge = function(req, res, next) {
     if (result && result.length > 0) {
       var conversation = result[0];
 
-      _conversationCharge(conversation, function(){
+      _conversationCharge(conversation, function() {
         res.status(200).send({
           success : true
         });
@@ -227,24 +229,51 @@ exports.confirmCharge = function(req, res, next) {
   });
 };
 
-_conversationCharge = function(conversation, cb) {
+_conversationCharge = function(conversation, callback) {
   var conversation_id = conversation.id;
+  var user_id = conversation.user_id;
+  var agent_emp_id = conversation.agent_emp_id;
+
+  // 计费方法实现
   var charge_length = conversation.charge_length;
-  // 计费方法实现{}
   var fee = config.voiceFee * charge_length;
   var translator_fee = config.voiceTranslatorFee * charge_length;
-  var sql = 'update tbl_conversation set status = ? where id= ?';
-  var args = [ 'charged', conversation_id ];
-  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-  var query = pool.query(sql, args, function(err, result) {
-    if (err) {
-      logger.error(err);
-      next(err);
-    } else {
+
+  async.parallel([
+    function(callback) {
       // 扣除用户费用
+      fee_dao.insert_user_charge(user_id, fee * -1, function(err){
+        callback(err, 'insert_user_charge');
+      });
+    }, function(callback){
+      fee_dao.update_user_balance(user_id, fee * -1, function(err){
+        callback(err, 'update_user_balance');
+      });
+    }, function(callback){
       // 翻译者增加翻译费
-      _updatefee(conversation_id, fee, translator_fee);
-      if (cb) cb();
+      fee_dao.insert_agent_emp_charge(agent_emp_id, translator_fee, function(err){
+        callback(err, 'insert_agent_emp_charge');
+      });
+    }, function(callback){
+      fee_dao.update_agent_emp_balance(agent_emp_id, translator_fee, function(err){
+        callback(err, 'update_agent_emp_balance');
+      });
+    }
+  ], function(e, results) {
+    if (results.length == 4) {
+      // 计费方法实现
+      var sql = 'update tbl_conversation set status = "charged" where id= ? and status in ("end", "chargeend")';
+      var args = [ conversation_id ];
+      logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+      var query = pool.query(sql, args, function(err, result) {
+        if (err || result.affectedRows === 0) {
+          logger.error(err);
+          next(err);
+        }
+        if (callback) callback(err);
+      });
+    } else {
+      if (callback) callback(e);
     }
   });
 };
@@ -293,7 +322,7 @@ exports.translator_feedback = function(req, res, next) {
   });
 };
 
-feedback = function(conversation_id, uid, isUser, network_star, peer_star, comment, cb) {
+feedback = function(conversation_id, uid, isUser, network_star, peer_star, comment, callback) {
   var sql = 'update tbl_conversation set ';
   if (isUser) {
     sql += ' user_network_star = ?, user_translator_star = ?, user_comment = ?, user_comment_date=utc_timestamp(3) where id = ? and user_id =?';
@@ -304,23 +333,13 @@ feedback = function(conversation_id, uid, isUser, network_star, peer_star, comme
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
 
-  var query = pool.query(sql, args, cb);
+  var query = pool.query(sql, args, callback);
 };
 
 _updatefee = function(conversation_id, fee, translator_fee) {
   findConversationByPK(conversation_id, function(err, result) {
     if (result && result.length > 0) {
       var conversation = result[0];
-      var user_id = conversation.user_id;
-      var agent_emp_id = conversation.agent_emp_id;
-
-      //user
-      fee_dao.insert_user_charge(user_id, fee * -1);
-      fee_dao.update_user_balance(user_id, fee * -1);
-
-      //agent_emp
-      fee_dao.insert_agent_emp_charge(agent_emp_id, translator_fee);
-      fee_dao.update_agent_emp_balance(agent_emp_id, translator_fee);
     }
   });
 };
@@ -381,8 +400,16 @@ exports.batch_check_uncharged_conversation = function(req, res, next) {
       var query = readonlyPool.query(sql, args, function(err, conversations) {
         logger.debug('conversations: %s', JSON.stringify(conversations));
 
-        conversations.forEach(function(conversation) {
-          _conversationCharge(conversation);
+        async.each(conversations, function(conversation, callback) {
+          _conversationCharge(conversation, function(err) {
+            callback(err);
+          });
+        }, function(err) {
+          if( err ) {
+            console.log('A conversation failed to process');
+          } else {
+            console.log('All conversations have been processed successfully');
+          }
         });
         res.status(200).json(conversations);
       });

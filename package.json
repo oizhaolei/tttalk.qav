@@ -10,6 +10,7 @@
     "aliyun-sdk": "*",
     "memcached": "*",
     "request": "*",
+    "async": "*",
     "mysql": "*"
   },
   "bundleDependencies": [],
