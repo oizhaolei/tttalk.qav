@@ -3,6 +3,7 @@ var config = require("../config.js").config;
 var mysql = require('mysql');
 var logger = require('log4js').getLogger('conversation.js');
 
+var math = require('mathjs');
 var async = require('async');
 
 var pool = mysql.createPool(config.mysql.ttt.main);
@@ -191,13 +192,23 @@ exports.endCharge = function(req, res, next) {
   });
 };
 
+// 根据秒数，得到用户费用，按分钟计费，不足1分钟的部分记1分钟
+function getUserFee(charge_seconds) {
+  return config.voiceFeePerMinute * math.ceil(charge_seconds / 60 );
+}
+
+// 根据秒数，得到翻译者费用，按分钟计费，不足1分钟的部分记1分钟
+function getTranslatorFee(charge_seconds) {
+  return config.voiceTranslatorFeePerMinute * math.ceil(charge_seconds / 60 );
+}
+
 // http://211.149.218.190:5000/charge/update?conversation_id=100&charge_length=11
 exports.updateCharge = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
   var charge_length = req.query.charge_length;
 
-  var fee = config.voiceFee * charge_length;
-  var translator_fee = config.voiceTranslatorFee * charge_length;
+  var fee = getUserFee(charge_length);
+  var translator_fee = getTranslatorFee(charge_length);
   var sql = 'update tbl_conversation set charge_length = ?, fee = ?, translator_fee = ? where id= ?';
   var args = [ charge_length, fee, translator_fee, conversation_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
@@ -236,8 +247,9 @@ _conversationCharge = function(conversation, callback) {
 
   // 计费方法实现
   var charge_length = conversation.charge_length;
-  var fee = config.voiceFee * charge_length;
-  var translator_fee = config.voiceTranslatorFee * charge_length;
+
+  var fee = getUserFee(charge_length);
+  var translator_fee = getTranslatorFee(charge_length);
 
   async.parallel([
     function(callback) {

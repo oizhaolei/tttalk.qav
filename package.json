@@ -3,15 +3,19 @@
   "version": "1.0.0",
   "description": "tttalk qav",
   "dependencies": {
+    "aliyun-sdk": "*",
+    "async": "*",
     "body-parser": "*",
     "curlrequest": "*",
     "express": "*",
     "log4js": "*",
-    "aliyun-sdk": "*",
+    "mathjs": "^2.4.0",
     "memcached": "*",
-    "request": "*",
-    "async": "*",
-    "mysql": "*"
+    "mysql": "*",
+    "request": "*"
+  },
+  "devDependencies": {
+    "mocha": "*"
   },
   "bundleDependencies": [],
   "private": true,
