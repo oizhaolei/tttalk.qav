@@ -385,6 +385,7 @@ exports.conversations = function(req, res, next) {
  * 定期处理batch
  */
 exports.batch_check_uncharged_conversation = function(req, res, next) {
+  var test = req.query.test;
   //
   var dSql = 'select date_sub(utc_timestamp(3), INTERVAL 24 hour) startDate, date_sub(utc_timestamp(3), INTERVAL 1 hour) endDate';
   readonlyPool.query(dSql, function(err, result) {
@@ -399,17 +400,19 @@ exports.batch_check_uncharged_conversation = function(req, res, next) {
       var query = readonlyPool.query(sql, args, function(err, conversations) {
         logger.debug('conversations: %s', JSON.stringify(conversations));
 
-        async.each(conversations, function(conversation, callback) {
-          _conversationCharge(conversation, function(err) {
-            callback(err);
+        if (test !== 'true') {  //非测试模式
+          async.each(conversations, function(conversation, callback) {
+            _conversationCharge(conversation, function(err) {
+              callback(err);
+            });
+          }, function(err) {
+            if( err ) {
+              console.log('A conversation failed to process');
+            } else {
+              console.log('All conversations have been processed successfully');
+            }
           });
-        }, function(err) {
-          if( err ) {
-            console.log('A conversation failed to process');
-          } else {
-            console.log('All conversations have been processed successfully');
-          }
-        });
+        }
         res.status(200).json(conversations);
       });
 
