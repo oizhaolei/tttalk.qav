@@ -30,15 +30,21 @@ exports.requestConversation = function(req, res, next) {
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = readonlyPool.query(sql, args, function(err, volunteers) {
     if (err) {
-      logger.error(err);
-      next(err);
+      res.status(200).json({
+        success : false,
+        msg : err
+      });
     } else {
       var sqli = 'insert into tbl_conversation (user_id, from_lang, to_lang, create_date) values(?, ?, ?, utc_timestamp(3))';
       var argsi = [ user_id, lang1, lang2];
       var query = pool.query(sqli, argsi, function(err, result) {
+        if (!err && result.affectedRows === 0) err = 'no data change';
+
         if (err) {
-          logger.error(err);
-          next(err);
+          res.status(200).json({
+            success : false,
+            msg : err
+          });
         } else {
           var conversation_id = result.insertId;
           res.status(200).json({
@@ -71,9 +77,13 @@ exports.beginConversation = function(req, res, next) {
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
-    if (err || result.affectedRows === 0) {
-      logger.error(err);
-      next(err);
+    if (!err && result.affectedRows === 0) err = 'no data change';
+
+    if (err) {
+      res.status(200).json({
+        success : false,
+        msg : err
+      });
     } else {
       res.status(200).json({
         'success' : true
@@ -97,9 +107,13 @@ exports.cancelConversation = function(req, res, next) {
 
     logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
     var query = pool.query(sql, args, function(err, result) {
-      if (err || result.affectedRows === 0) {
-        logger.error(err);
-        next(err);
+      if (!err && result.affectedRows === 0) err = 'no data change';
+
+      if (err) {
+        res.status(200).json({
+          success : false,
+          msg : err
+        });
       } else {
         res.status(200).json({
           'success' : true
@@ -125,9 +139,13 @@ exports.endConversation = function(req, res, next) {
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
-    if (err || result.affectedRows === 0) {
-      logger.error(err);
-      next(err);
+    if (!err && result.affectedRows === 0) err = 'no data change';
+
+    if (err) {
+      res.status(200).json({
+        success : false,
+        msg : err
+      });
     } else {
       res.status(200).json({
         'success' : true
@@ -154,11 +172,15 @@ exports.beginCharge = function(req, res, next) {
   var args = [ conversation_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
-    if (err || result.affectedRows === 0) {
-      logger.error(err);
-      next(err);
+    if (!err && result.affectedRows === 0) err = 'no data change';
+
+    if (err) {
+      res.status(200).json({
+        success : false,
+        msg : err
+      });
     } else {
-      res.status(200).send({
+      res.status(200).json({
         success : true
       });
     }
@@ -181,11 +203,15 @@ exports.endCharge = function(req, res, next) {
   var args = [ charge_length, conversation_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
-    if (err || result.affectedRows === 0) {
-      logger.error(err);
-      next(err);
+    if (!err && result.affectedRows === 0) err = 'no data change';
+
+    if (err) {
+      res.status(200).json({
+        success : false,
+        msg : err
+      });
     } else {
-      res.status(200).send({
+      res.status(200).json({
         success : true
       });
     }
@@ -209,15 +235,19 @@ exports.updateCharge = function(req, res, next) {
 
   var fee = getUserFee(charge_length);
   var translator_fee = getTranslatorFee(charge_length);
-  var sql = 'update tbl_conversation set charge_length = ?, fee = ?, translator_fee = ? where id= ?';
+  var sql = 'update tbl_conversation set charge_length = ?, fee = ?, translator_fee = ? where id= ? and status in ("end", "chargeend"';
   var args = [ charge_length, fee, translator_fee, conversation_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
+    if (!err && result.affectedRows === 0) err = 'no data change';
+
     if (err) {
-      logger.error(err);
-      next(err);
+      res.status(200).json({
+        success : false,
+        msg : err
+      });
     } else {
-      res.status(200).send({
+      res.status(200).json({
         success : true
       });
     }
@@ -231,11 +261,20 @@ exports.confirmCharge = function(req, res, next) {
     if (result && result.length > 0) {
       var conversation = result[0];
 
-      _conversationCharge(conversation, function(err) {
-        res.status(200).send({
-          success : true
+      if (conversation.status === 'end' || conversation.status === 'chargeend') {
+        _conversationCharge(conversation, function(err) {
+          if (err) {
+            res.status(200).json({
+              success : false,
+              msg : err
+            });
+          } else {
+            res.status(200).json({
+              success : true
+            });
+          }
         });
-      });
+      }
     }
   });
 };
@@ -278,10 +317,7 @@ _conversationCharge = function(conversation, callback) {
       var args = [ conversation_id ];
       logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
       var query = pool.query(sql, args, function(err, result) {
-        if (err || result.affectedRows === 0) {
-          logger.error(err);
-        }
-        if (callback) callback(err);
+        if (callback) callback(err, result);
       });
     } else {
       if (callback) callback(e);
@@ -301,10 +337,12 @@ exports.user_feedback = function(req, res, next) {
 
   feedback(conversation_id, user_id, isUser, network_star, peer_star, comment, function(err, result) {
     if (err) {
-      logger.error(err);
-      next(err);
+      res.status(200).json({
+        success : false,
+        msg : err
+      });
     } else {
-      res.status(200).send({
+      res.status(200).json({
         success : true
       });
     }
@@ -323,10 +361,12 @@ exports.translator_feedback = function(req, res, next) {
 
   feedback(conversation_id, agent_emp_id, isUser, network_star, peer_star, comment, function(err, result) {
     if (err) {
-      logger.error(err);
-      next(err);
+      res.status(200).json({
+        success : false,
+        msg : err
+      });
     } else {
-      res.status(200).send({
+      res.status(200).json({
         success : true
       });
     }
@@ -347,23 +387,14 @@ feedback = function(conversation_id, uid, isUser, network_star, peer_star, comme
   var query = pool.query(sql, args, callback);
 };
 
-_updatefee = function(conversation_id, fee, translator_fee) {
-  findConversationByPK(conversation_id, function(err, result) {
-    if (result && result.length > 0) {
-      var conversation = result[0];
-    }
-  });
-};
-
 exports.conversation = function(req, res, next) {
   var conversation_id = req.params.id;
   findConversationByPK(conversation_id, function(err, data) {
-      if (data && data.length > 0) {
-        data = data[0];
-        res.status(200).send(data);
-      } else {
-        next(err);
-      }
+    if (data && data.length > 0) {
+      res.status(200).json(data);
+    } else {
+      next(err);
+    }
   });
 };
 
@@ -374,9 +405,9 @@ exports.conversations = function(req, res, next) {
   //
   var sql;
   if (type == 'u') {
-    sql = 'select * from tbl_conversation where user_id =? order by id desc limit 20';
+    sql = 'select * from tbl_conversation where user_id = ? order by id desc limit 20';
   } else {
-    sql = 'select * from tbl_conversation where agent_emp_id =? order by id desc limit 20';
+    sql = 'select * from tbl_conversation where agent_emp_id = ? order by id desc limit 20';
   }
 
   var args = [ loginid ];
@@ -384,8 +415,10 @@ exports.conversations = function(req, res, next) {
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = readonlyPool.query(sql, args, function(err, conversations) {
     if (err) {
-      logger.error(err);
-      next(err);
+      res.status(200).json({
+        success : false,
+        msg : err
+      });
     } else {
       res.status(200).json(conversations);
 

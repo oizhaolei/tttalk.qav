@@ -66,11 +66,10 @@ app.use(checkSign);
 app.get('/volunteer/online', volunteer.online);
 app.get('/volunteer/offline', volunteer.offline);
 
-app.get('/volunteer/qav_request', qav.requestConversation);//TO DELETE
 app.get('/conversation/request', qav.requestConversation);
+app.get('/conversation/cancel', qav.cancelConversation);
 
 app.get('/conversation/begin', qav.beginConversation);
-app.get('/conversation/cancel', qav.cancelConversation);
 app.get('/conversation/end', qav.endConversation);
 app.get('/conversations/:id', qav.conversation);
 app.get('/conversations', qav.conversations);

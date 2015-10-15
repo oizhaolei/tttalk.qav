@@ -19,10 +19,17 @@ exports.online = function(req, res, next) {
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
+    if (!err && result.affectedRows === 0) err = 'no data change';
+
     if (err) {
-      res.status(500).send("error");
+      res.status(200).send({
+        success : false,
+        msg : err
+      });
     } else {
-      res.status(200).send(agent_emp_id);
+      res.status(200).send({
+        success : true
+      });
     }
   });
 };
@@ -52,10 +59,17 @@ exports.offline = function(req, res, next) {
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {
+    if (!err && result.affectedRows === 0) err = 'no data change';
+
     if (err) {
-      res.status(500).send("error");
+      res.status(200).send({
+        success : false,
+        msg : err
+      });
     } else {
-      res.status(200).send(agent_emp_id);
+      res.status(200).send({
+        success : true
+      });
     }
   });
 };
