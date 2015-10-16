@@ -23,7 +23,9 @@ exports.update_user_balance = function(user_id, delta, callback) {
       logger.error(err);
     } else {
       var user_key = "tbl_user_" + user_id;
-      cacheClient.delete(user_key);
+      cacheClient.delete(user_key, function(err, data) {
+        logger.error(err);
+      });
     }
     if (callback) callback(err);
   });
@@ -44,7 +46,9 @@ exports.update_agent_emp_balance = function(agent_emp_id, delta, callback) {
       logger.error(err);
     } else {
       var agent_emp_key = "tbl_agent_emp_by_id_" + agent_emp_id;
-      cacheClient.delete(agent_emp_key);
+      cacheClient.delete(agent_emp_key, function(err, data) {
+        logger.error(err);
+      });
     }
     if (callback) callback(err);
   });
