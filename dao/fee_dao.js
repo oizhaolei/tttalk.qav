@@ -17,6 +17,8 @@ exports.update_user_balance = function(user_id, delta, callback) {
   var args = [ delta, user_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   pool.query(sql, args, function(err, result) {
+    if (!err && result.affectedRows === 0) err = 'no data change';
+
     if (err) {
       logger.error(err);
     } else {
@@ -36,6 +38,8 @@ exports.update_agent_emp_balance = function(agent_emp_id, delta, callback) {
   var args = [ delta, agent_emp_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   pool.query(sql, args, function(err, result) {
+    if (!err && result.affectedRows === 0) err = 'no data change';
+
     if (err) {
       logger.error(err);
     } else {

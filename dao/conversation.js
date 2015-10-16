@@ -391,6 +391,7 @@ exports.conversation = function(req, res, next) {
   var conversation_id = req.params.id;
   findConversationByPK(conversation_id, function(err, data) {
     if (data && data.length > 0) {
+      data = data[0];
       res.status(200).json(data);
     } else {
       next(err);
