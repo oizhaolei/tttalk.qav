@@ -235,7 +235,7 @@ exports.updateCharge = function(req, res, next) {
 
   var fee = getUserFee(charge_length);
   var translator_fee = getTranslatorFee(charge_length);
-  var sql = 'update tbl_conversation set charge_length = ?, fee = ?, translator_fee = ? where id= ? and status in ("end", "chargeend"';
+  var sql = 'update tbl_conversation set charge_length = ?, fee = ?, translator_fee = ? where id= ? and status in ("end", "chargeend")';
   var args = [ charge_length, fee, translator_fee, conversation_id ];
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, function(err, result) {

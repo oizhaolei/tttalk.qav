@@ -1,7 +1,7 @@
 var util = require('util');
 var config = require("../config.js").config;
 var mysql = require('mysql');
-var logger = require('log4js').getLogger('conversation.js');
+var logger = require('log4js').getLogger('fee_dao.js');
 
 var pool = mysql.createPool(config.mysql.ttt.main);
 var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
