@@ -38,7 +38,7 @@ exports.online = function(req, res, next) {
 
       //memcache
       var key = 'qav_device_' + agent_emp_id;
-      cacheClient.set(key, agent_emp_id, 120, function(err){
+      cacheClient.set(key, agent_emp_id, 360, function(err){
       });
     }
   });
@@ -109,6 +109,7 @@ function _offline(agent_emp_id, callback) {
 
 // http://ctalk3:4005/batch/online_check
 exports.batch_online_check = function(req, res, next) {
+  logger.info('online check');
   var sql = 'select * from qav_devices where status = "online"';
   logger.debug('[sql:]%s', sql);
   readonlyPool.query(sql, function(err, qav_devices) {
@@ -131,9 +132,9 @@ exports.batch_online_check = function(req, res, next) {
         });
       }, function(err) {
         if( err ) {
-          console.log('A conversation failed to process');
+          console.log('A volunteer failed to process');
         } else {
-          console.log('All conversations have been processed successfully');
+          console.log('All volunteers have been processed successfully');
         }
       });
 

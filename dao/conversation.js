@@ -431,6 +431,7 @@ exports.conversations = function(req, res, next) {
  * 定期处理batch
  */
 exports.batch_check_uncharged_conversation = function(req, res, next) {
+  logger.info('uncharged check');
   var test = req.query.test;
   //
   var dSql = 'select date_sub(utc_timestamp(3), INTERVAL 24 hour) startDate, date_sub(utc_timestamp(3), INTERVAL 1 hour) endDate';
