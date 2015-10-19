@@ -38,7 +38,7 @@ exports.online = function(req, res, next) {
 
       //memcache
       var key = 'qav_device_' + agent_emp_id;
-      cacheClient.set(key, agent_emp_id, 600, function(err){
+      cacheClient.set(key, agent_emp_id, 120, function(err){
       });
     }
   });
@@ -90,9 +90,9 @@ function _send_offline_mail(agent_emp_id, callback) {
     if (data && data.length > 0) {
       var agent_emp = data[0];
       var to = agent_emp.tel;
-      var subject = 'offline';
-      mail.send(to, subject, '', function(){
-            logger.debug('send offline mail to %s', to);
+      var subject = 'offline: ' + to;
+      var content = 'offline: ' + to;
+      mail.send(to, subject , content, function(){
       });
     }
   });
@@ -126,6 +126,8 @@ exports.batch_online_check = function(req, res, next) {
             _send_offline_mail(agent_emp_id, function(){
             });
           }
+
+          callback(err);
         });
       }, function(err) {
         if( err ) {

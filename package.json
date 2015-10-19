@@ -12,7 +12,8 @@
     "mathjs": "^2.4.0",
     "memcached": "*",
     "mysql": "*",
-    "request": "*"
+    "request": "*",
+    "node-gearman": "*"
   },
   "devDependencies": {
     "mocha": "*"
