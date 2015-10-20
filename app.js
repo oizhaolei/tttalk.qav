@@ -76,14 +76,14 @@ app.get('/conversations', qav.conversations);
 
 app.get('/charge/begin', qav.beginCharge);
 app.get('/charge/end', qav.endCharge);
-app.get('/charge/update', qav.updateCharge);
+//app.get('/charge/update', qav.updateCharge);
 app.get('/charge/confirm', qav.confirmCharge);
 
 app.get('/conversation/user_feedback', qav.user_feedback);
 app.get('/conversation/translator_feedback', qav.translator_feedback);
 
 app.get('/batch/online_check', volunteer.batch_online_check);
-app.get('/batch/uncharged_conversation', qav.batch_check_uncharged_conversation);
+//app.get('/batch/uncharged_conversation', qav.batch_check_uncharged_conversation);
 
 var server = app.listen(config.app_port, function() {
   logger.debug('Listening on port %d', server.address().port);

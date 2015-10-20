@@ -228,41 +228,17 @@ function getTranslatorFee(charge_seconds) {
   return config.voiceTranslatorFeePerMinute * math.ceil(charge_seconds / 60 );
 }
 
-// http://211.149.218.190:5000/charge/update?conversation_id=100&charge_length=11
-exports.updateCharge = function(req, res, next) {
+// http://211.149.218.190:5000/charge/confirm?conversation_id=100&charge_leng=11
+exports.confirmCharge = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
   var charge_length = req.query.charge_length;
 
-  var fee = getUserFee(charge_length);
-  var translator_fee = getTranslatorFee(charge_length);
-  var sql = 'update tbl_conversation set charge_length = ?, fee = ?, translator_fee = ? where id= ? and status in ("end", "chargeend")';
-  var args = [ charge_length, fee, translator_fee, conversation_id ];
-  logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-  var query = pool.query(sql, args, function(err, result) {
-    if (!err && result.affectedRows === 0) err = 'no data change';
-
-    if (err) {
-      res.status(200).json({
-        success : false,
-        msg : err
-      });
-    } else {
-      res.status(200).json({
-        success : true
-      });
-    }
-  });
-};
-
-// http://211.149.218.190:5000/charge/confirm?conversation_id=100
-exports.confirmCharge = function(req, res, next) {
-  var conversation_id = req.query.conversation_id;
   findConversationByPK(conversation_id, function(err, result) {
     if (result && result.length > 0) {
       var conversation = result[0];
 
       if (conversation.status === 'end' || conversation.status === 'chargeend') {
-        _conversationCharge(conversation, function(err) {
+        _conversationCharge(conversation, charge_length, function(err) {
           if (err) {
             res.status(200).json({
               success : false,
@@ -279,14 +255,12 @@ exports.confirmCharge = function(req, res, next) {
   });
 };
 
-_conversationCharge = function(conversation, callback) {
+_conversationCharge = function(conversation, charge_length, callback) {
   var conversation_id = conversation.id;
   var user_id = conversation.user_id;
   var agent_emp_id = conversation.agent_emp_id;
 
   // 计费方法实现
-  var charge_length = conversation.charge_length;
-
   var fee = getUserFee(charge_length);
   var translator_fee = getTranslatorFee(charge_length);
 
@@ -313,8 +287,8 @@ _conversationCharge = function(conversation, callback) {
   ], function(e, results) {
     if (results.length == 4) {
       // 计费方法实现
-      var sql = 'update tbl_conversation set status = "charged" where id= ? and status in ("end", "chargeend")';
-      var args = [ conversation_id ];
+      var sql = 'update tbl_conversation set charge_length = ?, status = "charged" where id= ? and status in ("end", "chargeend")';
+      var args = [ charge_length, conversation_id ];
       logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
       var query = pool.query(sql, args, function(err, result) {
         if (callback) callback(err, result);
@@ -422,46 +396,6 @@ exports.conversations = function(req, res, next) {
       });
     } else {
       res.status(200).json(conversations);
-
-    }
-  });
-};
-
-/**
- * 定期处理batch
- */
-exports.batch_check_uncharged_conversation = function(req, res, next) {
-  logger.info('uncharged check');
-  var test = req.query.test;
-  //
-  var dSql = 'select date_sub(utc_timestamp(3), INTERVAL 24 hour) startDate, date_sub(utc_timestamp(3), INTERVAL 1 hour) endDate';
-  readonlyPool.query(dSql, function(err, result) {
-    if (result && result.length > 0) {
-      var row = result[0];
-      var startDate = row.startDate;
-      var endDate = row.endDate;
-      var sql = 'select * from tbl_conversation where charge_length > 0 and status in ("end", "chargeend") and create_date between ? and ? limit 20';
-      var args = [ startDate, endDate ];
-
-      logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-      var query = readonlyPool.query(sql, args, function(err, conversations) {
-        logger.debug('conversations: %s', JSON.stringify(conversations));
-
-        if (test !== 'true') {  //非测试模式
-          async.each(conversations, function(conversation, callback) {
-            _conversationCharge(conversation, function(err) {
-              callback(err);
-            });
-          }, function(err) {
-            if( err ) {
-              console.log('A conversation failed to process');
-            } else {
-              console.log('All conversations have been processed successfully');
-            }
-          });
-        }
-        res.status(200).json(conversations);
-      });
 
     }
   });

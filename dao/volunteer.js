@@ -90,7 +90,7 @@ function _send_offline_mail(agent_emp_id, callback) {
     if (data && data.length > 0) {
       var agent_emp = data[0];
       var to = agent_emp.tel;
-      var subject = 'offline: ' + to;
+      var subject = 'It seems you are offline.';
       var content = 'offline: ' + to;
       mail.send(to, subject , content, function(){
       });
