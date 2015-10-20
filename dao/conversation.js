@@ -287,8 +287,8 @@ _conversationCharge = function(conversation, charge_length, callback) {
   ], function(e, results) {
     if (results.length == 4) {
       // 计费方法实现
-      var sql = 'update tbl_conversation set charge_length = ?, status = "charged" where id= ? and status in ("end", "chargeend")';
-      var args = [ charge_length, conversation_id ];
+      var sql = 'update tbl_conversation set charge_length = ?, fee = ?, translator_fee = ?, status = "charged" where id= ? and status in ("end", "chargeend")';
+      var args = [ charge_length, fee, translator_fee, conversation_id ];
       logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
       var query = pool.query(sql, args, function(err, result) {
         if (callback) callback(err, result);
