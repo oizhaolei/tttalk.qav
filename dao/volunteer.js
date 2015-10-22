@@ -43,6 +43,7 @@ exports.online = function(req, res, next) {
 
 exports.ping = function(req, res, next) {
   var agent_emp_id = req.query.loginid;
+  logger.debug('ping: %s', agent_emp_id);
 
   //memcache
   var key = 'qav_device_' + agent_emp_id;
