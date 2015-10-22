@@ -23,7 +23,7 @@ exports.requestConversation = function(req, res, next) {
   var lang2 = req.query.lang2;
 
   // sql
-  var sql = 'select qd.agent_emp_id, qd.last_online_time, emp.fullname, emp.tel from qav_devices qd, tbl_agent_emp emp inner join (select id from tbl_agent_store where ((lang1=? and lang2=?) or (lang1=? and lang2=?))) store on store.id=emp.agentstoreid where qd.agent_emp_id = emp.id and qd.busy=0 and qd.status ="online" order by qd.last_online_time desc limit 5';
+  var sql = 'select qd.agent_emp_id, qd.last_online_time, emp.fullname, emp.tel, emp.pic_url from qav_devices qd, tbl_agent_emp emp inner join (select id from tbl_agent_store where ((lang1=? and lang2=?) or (lang1=? and lang2=?))) store on store.id=emp.agentstoreid where qd.agent_emp_id = emp.id and qd.busy=0 and qd.status ="online" order by qd.last_online_time desc limit 5';
 
   var args = [ lang1, lang2, lang2, lang1 ];
 
