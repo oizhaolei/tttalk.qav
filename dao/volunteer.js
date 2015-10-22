@@ -124,7 +124,8 @@ exports.batch_online_check = function(req, res, next) {
   var sql = 'select * from qav_devices where status = "online"';
   logger.debug('[sql:]%s', sql);
   readonlyPool.query(sql, function(err, qav_devices) {
-    if (qav_devices) {
+    logger.debug('qav_devices: %s', JSON.stringify(qav_devices));
+    if (qav_devices && qav_devices.length > 0) {
       var online_count = 0;
       async.each(qav_devices, function(qav_device, callback) {
         var agent_emp_id = qav_device.agent_emp_id;
@@ -133,7 +134,6 @@ exports.batch_online_check = function(req, res, next) {
 
           if (data) {
             online_count++;
-            logger.debug('online: %s', data);
           } else {
             _offline(agent_emp_id, function(err, result) {
             });
