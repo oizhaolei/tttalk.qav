@@ -15,9 +15,6 @@ var readonlyPool = mysql.createPool(config.mysql.ttt.readonly1);
 
 exports.online = function(req, res, next) {
   var agent_emp_id = req.query.loginid;
-  if (agent_emp_id.indexOf('v_') === 0) {
-    agent_emp_id = agent_emp_id.substring(2);
-  }
   // merge sql
   var sql = 'insert into qav_devices (agent_emp_id, last_online_time, status, create_date) values(?, utc_timestamp(3), "online", utc_timestamp(3)) ON DUPLICATE KEY UPDATE busy=0, last_online_time = utc_timestamp(3), status="online"';
   var args = [ agent_emp_id ];
@@ -42,6 +39,19 @@ exports.online = function(req, res, next) {
       });
     }
   });
+};
+
+exports.ping = function(req, res, next) {
+  var agent_emp_id = req.query.loginid;
+
+  //memcache
+  var key = 'qav_device_' + agent_emp_id;
+  cacheClient.set(key, agent_emp_id, 360, function(err){
+  });
+  res.status(200).send({
+    success : true
+  });
+
 };
 
 changeField = function(agent_emp_id, field, val, cb) {
@@ -114,12 +124,14 @@ exports.batch_online_check = function(req, res, next) {
   logger.debug('[sql:]%s', sql);
   readonlyPool.query(sql, function(err, qav_devices) {
     if (qav_devices) {
+      var online_count = 0;
       async.each(qav_devices, function(qav_device, callback) {
         var agent_emp_id = qav_device.agent_emp_id;
         var key = 'qav_device_' + agent_emp_id;
         cacheClient.get(key, function(err, data) {
 
           if (data) {
+            online_count++;
             logger.debug('online: %s', data);
           } else {
             _offline(agent_emp_id, function(err, result) {
@@ -134,6 +146,13 @@ exports.batch_online_check = function(req, res, next) {
         if( err ) {
           console.log('A volunteer failed to process');
         } else {
+          if (online_count === 0) {
+            var to = config.sales_managers;
+            var subject = 'It seems all translator are just offline.';
+            var content = subject;
+            mail.send(to, subject , content, function(){
+            });
+          }
           console.log('All volunteers have been processed successfully');
         }
       });
