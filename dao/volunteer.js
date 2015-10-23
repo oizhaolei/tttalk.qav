@@ -84,9 +84,13 @@ exports.offline = function(req, res, next) {
         success : true
       });
 
-      //memcache
+      //memcache del
       var key = 'qav_device_' + agent_emp_id;
       cacheClient.del(key);
+      //set offline status
+      var offline_key = 'qav_offline_' + agent_emp_id;
+      cacheClient.set(offline_key, agent_emp_id, 360, function(err){
+      });
     }
   });
 };
@@ -101,7 +105,7 @@ function _send_offline_mail(agent_emp_id, callback) {
     if (data && data.length > 0) {
       var agent_emp = data[0];
       var to = agent_emp.tel;
-      var subject = 'It seems you are offline.';
+      var subject = 'It seems your qav are offline.';
       var content = 'offline: ' + to;
       mail.send(to, subject , content, function(){
       });
