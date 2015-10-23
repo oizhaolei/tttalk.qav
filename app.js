@@ -79,8 +79,8 @@ app.get('/charge/end', qav.endCharge);
 //app.get('/charge/update', qav.updateCharge);
 app.get('/charge/confirm', qav.confirmCharge);
 
-app.get('/conversation/user_feedback', qav.user_feedback);
-app.get('/conversation/translator_feedback', qav.translator_feedback);
+app.post('/conversation/user_feedback', qav.user_feedback);
+app.post('/conversation/translator_feedback', qav.translator_feedback);
 
 app.get('/batch/online_check', volunteer.batch_online_check);
 //app.get('/batch/uncharged_conversation', qav.batch_check_uncharged_conversation);

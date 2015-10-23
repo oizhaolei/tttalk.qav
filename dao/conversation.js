@@ -301,10 +301,10 @@ _conversationCharge = function(conversation, charge_length, callback) {
 
 // http://211.149.218.190:5000/conversation/user_feedback?id=17&network_star=1&peer_star=1&comment=XXX
 exports.user_feedback = function(req, res, next) {
-  var conversation_id = req.query.id;
-  var network_star = req.query.network_star;
-  var peer_star = req.query.peer_star;
-  var comment = req.query.comment;
+  var conversation_id = req.body.id;
+  var network_star = req.body.network_star;
+  var peer_star = req.body.peer_star;
+  var comment = req.body.comment;
 
   var isUser = true;
   var user_id = req.query.loginid;
@@ -325,10 +325,10 @@ exports.user_feedback = function(req, res, next) {
 
 // http://211.149.218.190:5000/conversation/translator_feedback?id=17&network_star=2&peer_star=2&comment=XXX
 exports.translator_feedback = function(req, res, next) {
-  var conversation_id = req.query.id;
-  var network_star = req.query.network_star;
-  var peer_star = req.query.peer_star;
-  var comment = req.query.comment;
+  var conversation_id = req.body.id;
+  var network_star = req.body.network_star;
+  var peer_star = req.body.peer_star;
+  var comment = req.body.comment;
 
   var isUser = false;
   var agent_emp_id = req.query.loginid;
