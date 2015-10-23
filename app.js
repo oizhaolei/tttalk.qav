@@ -63,6 +63,7 @@ checkSign = function(req, res, next) {
 app.use(checkSign);
 
 //volunteer
+app.get('/volunteer/ping', volunteer.ping);
 app.get('/volunteer/online', volunteer.online);
 app.get('/volunteer/offline', volunteer.offline);
 
