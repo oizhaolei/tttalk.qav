@@ -23,7 +23,7 @@ exports.requestConversation = function(req, res, next) {
   var lang2 = req.query.lang2;
 
   // sql
-  var sql = 'select qd.agent_emp_id, qd.last_online_time, emp.fullname, emp.tel, emp.pic_url from qav_devices qd, tbl_agent_emp emp inner join (select id from tbl_agent_store where ((lang1=? and lang2=?) or (lang1=? and lang2=?))) store on store.id=emp.agentstoreid where qd.agent_emp_id = emp.id and qd.busy=0 and qd.status ="online" order by qd.last_online_time desc limit 5';
+  var sql = 'select qd.agent_emp_id, qd.last_online_time, emp.fullname, emp.tel, emp.pic_url from qav_devices qd, tbl_agent_emp emp inner join (select id from tbl_agent_store where ((lang1=? and lang2=?) or (lang1=? and lang2=?))) store on store.id=emp.agentstoreid where qd.agent_emp_id = emp.id and emp.call_permissions=1 and qd.busy=0 and qd.status ="online" order by qd.last_online_time desc limit 5';
 
   var args = [ lang1, lang2, lang2, lang1 ];
 
@@ -69,8 +69,6 @@ exports.beginConversation = function(req, res, next) {
   }
 
   var sql, args;
-  //busy
-  volunteer.changeField(agent_emp_id, 'busy', 1);
 
   sql = 'update tbl_conversation set agent_emp_id = ?, start_time = utc_timestamp(3), status = "begin" where id = ? and status in ("request")';
   args = [ agent_emp_id, conversation_id ];
@@ -85,6 +83,9 @@ exports.beginConversation = function(req, res, next) {
         msg : err
       });
     } else {
+      //busy
+      volunteer.changeField(agent_emp_id, 'busy', 1);
+
       res.status(200).json({
         'success' : true
       });
@@ -350,9 +351,9 @@ exports.translator_feedback = function(req, res, next) {
 feedback = function(conversation_id, uid, isUser, network_star, peer_star, comment, callback) {
   var sql = 'update tbl_conversation set ';
   if (isUser) {
-    sql += ' user_network_star = ?, user_translator_star = ?, user_comment = ?, user_comment_date=utc_timestamp(3) where id = ? and user_id =?';
+    sql += ' user_network_star = ?, user_translator_star = ?, user_comment = ?, user_comment_date=utc_timestamp(3) where id = ? and user_id =? and user_translator_star = 0';
   } else {
-    sql += ' translator_network_star = ?, translator_user_star = ?, translator_comment = ?, translator_comment_date=utc_timestamp(3) where id = ? and agent_emp_id=?';
+    sql += ' translator_network_star = ?, translator_user_star = ?, translator_comment = ?, translator_comment_date=utc_timestamp(3) where id = ? and agent_emp_id=? and translator_user_star = 0';
   }
   var args = [network_star, peer_star, comment, conversation_id, uid];
 
