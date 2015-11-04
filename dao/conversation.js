@@ -22,50 +22,51 @@ exports.requestConversation = function(req, res, next) {
   var args1 = [ user_id ];
   logger.debug('[sql:]%s, %s', sql1, JSON.stringify(args1));
   pool.query(sql1, args1, function(err, result) {
+    var balance = 0;
     if (!err && result && result.length > 0 ) {
-      var balance = result[0].balance;
-      if (balance < 2000) {
-        res.status(200).json({
-          success : false,
-          msg : 'balance2000'
-        });
-      } else {
-        // sql
-        var sql = 'select qd.agent_emp_id, qd.last_online_time, emp.fullname, emp.tel, emp.pic_url from qav_devices qd, tbl_agent_emp emp inner join (select id from tbl_agent_store where ((lang1=? and lang2=?) or (lang1=? and lang2=?))) store on store.id=emp.agentstoreid where qd.agent_emp_id = emp.id and emp.call_permissions=1 and qd.busy=0 and qd.status ="online" order by qd.last_online_time desc limit 5';
+      balance = result[0].balance;
+    }
+    if (balance < 2000) {
+      res.status(200).json({
+        success : false,
+        msg : 'balance2000'
+      });
+    } else {
+      // sql
+      var sql = 'select qd.agent_emp_id, qd.last_online_time, emp.fullname, emp.tel, emp.pic_url from qav_devices qd, tbl_agent_emp emp inner join (select id from tbl_agent_store where ((lang1=? and lang2=?) or (lang1=? and lang2=?))) store on store.id=emp.agentstoreid where qd.agent_emp_id = emp.id and emp.call_permissions=1 and qd.busy=0 and qd.status ="online" order by qd.last_online_time desc limit 5';
 
-        var args = [ lang1, lang2, lang2, lang1 ];
+      var args = [ lang1, lang2, lang2, lang1 ];
 
-        logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-        var query = readonlyPool.query(sql, args, function(err, volunteers) {
-          if (err) {
-            res.status(200).json({
-              success : false,
-              msg : err
-            });
-          } else {
-            var sqli = 'insert into tbl_conversation (user_id, from_lang, to_lang, create_date) values(?, ?, ?, utc_timestamp(3))';
-            var argsi = [ user_id, lang1, lang2];
-            var query = pool.query(sqli, argsi, function(err, result) {
-              if (!err && result.affectedRows === 0) err = 'no data change';
+      logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+      var query = readonlyPool.query(sql, args, function(err, volunteers) {
+        if (err) {
+          res.status(200).json({
+            success : false,
+            msg : err
+          });
+        } else {
+          var sqli = 'insert into tbl_conversation (user_id, from_lang, to_lang, create_date) values(?, ?, ?, utc_timestamp(3))';
+          var argsi = [ user_id, lang1, lang2];
+          var query = pool.query(sqli, argsi, function(err, result) {
+            if (!err && result.affectedRows === 0) err = 'no data change';
 
-              if (err) {
-                res.status(200).json({
-                  success : false,
-                  msg : err
-                });
-              } else {
-                var conversation_id = result.insertId;
-                res.status(200).json({
-                  conversation_id : conversation_id,
-                  data : volunteers
-                });
+            if (err) {
+              res.status(200).json({
+                success : false,
+                msg : err
+              });
+            } else {
+              var conversation_id = result.insertId;
+              res.status(200).json({
+                conversation_id : conversation_id,
+                data : volunteers
+              });
 
-              }
-            });
+            }
+          });
 
-          }
-        });
-      }
+        }
+      });
     }
   });
 
