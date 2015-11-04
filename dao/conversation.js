@@ -27,7 +27,7 @@ exports.requestConversation = function(req, res, next) {
       if (balance < 2000) {
         res.status(200).json({
           success : false,
-          msg : 'balance < 2000'
+          msg : 'balance2000'
         });
       } else {
         // sql
