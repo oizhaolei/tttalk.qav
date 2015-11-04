@@ -58,6 +58,7 @@ exports.requestConversation = function(req, res, next) {
             } else {
               var conversation_id = result.insertId;
               res.status(200).json({
+                success : true,
                 conversation_id : conversation_id,
                 data : volunteers
               });
