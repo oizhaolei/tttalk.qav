@@ -185,15 +185,15 @@ exports.beginCharge = function(req, res, next) {
       var args = [ conversation_id ];
       logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
       var query = pool.query(sql, args, function(err, result) {
-        if (result && result.length > 0 ) {
+        if (!err && result && result.length > 0 ) {
           res.status(200).json({
             success : true,
             balance : result[0].balance
           });
         } else {
           res.status(200).json({
-            success : false,
-            msg : err
+            success : true,
+            balance : 0
           });
         }
       });
