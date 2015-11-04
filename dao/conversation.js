@@ -181,8 +181,21 @@ exports.beginCharge = function(req, res, next) {
         msg : err
       });
     } else {
-      res.status(200).json({
-        success : true
+      var sql = "select balance from tbl_user a, tbl_conversation b where a.id = b.user_id and b.id = ?";
+      var args = [ conversation_id ];
+      logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
+      var query = pool.query(sql, args, function(err, result) {
+        if (result && result.length > 0 ) {
+          res.status(200).json({
+            success : true,
+            balance : result[0].balance
+          });
+        } else {
+          res.status(200).json({
+            success : false,
+            msg : err
+          });
+        }
       });
     }
   });
