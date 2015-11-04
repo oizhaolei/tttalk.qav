@@ -1,4 +1,3 @@
-var util = require('util');
 var config = require("../config.js").config;
 var mysql = require('mysql');
 var logger = require('log4js').getLogger('conversation.js');
@@ -16,9 +15,6 @@ var fee_dao = require('./fee_dao.js');
 // http://211.149.218.190:5000/conversion/request?lang1=CN&lang2=EN&loginin=4638
 exports.requestConversation = function(req, res, next) {
   var user_id = req.query.loginid;
-  if (user_id.indexOf('u_') === 0) {
-    user_id = user_id.substring(2);
-  }
   var lang1 = req.query.lang1;
   var lang2 = req.query.lang2;
 
@@ -62,11 +58,7 @@ exports.requestConversation = function(req, res, next) {
 // http://211.149.218.190:5000/conversation/begin?conversation_id=17&agent_emp_id=2074
 exports.beginConversation = function(req, res, next) {
   var conversation_id = req.query.conversation_id;
-
   var agent_emp_id = req.query.agent_emp_id;
-  if (agent_emp_id.indexOf('v_') === 0) {
-    agent_emp_id = agent_emp_id.substring(2);
-  }
 
   var sql, args;
 
@@ -181,21 +173,18 @@ exports.beginCharge = function(req, res, next) {
         msg : err
       });
     } else {
-      var sql = "select balance from tbl_user a, tbl_conversation b where a.id = b.user_id and b.id = ?";
-      var args = [ conversation_id ];
-      logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
-      var query = pool.query(sql, args, function(err, result) {
+      var sql1 = "select balance from tbl_user a, tbl_conversation b where a.id = b.user_id and b.id = ?";
+      var args1 = [ conversation_id ];
+      logger.debug('[sql:]%s, %s', sql1, JSON.stringify(args1));
+      var query = pool.query(sql1, args1, function(err, result) {
+        var balance = 0;
         if (!err && result && result.length > 0 ) {
-          res.status(200).json({
-            success : true,
-            balance : result[0].balance
-          });
-        } else {
-          res.status(200).json({
-            success : true,
-            balance : 0
-          });
+          balance = result[0].balance;
         }
+        res.status(200).json({
+          success : true,
+          balance : balance
+        });
       });
     }
   });
