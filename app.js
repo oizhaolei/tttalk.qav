@@ -28,6 +28,13 @@ checkSign = function(req, res, next) {
   logger.info('query = %s', JSON.stringify(req.query));
   logger.info('body = %s', JSON.stringify(req.body));
   logger.info('---------------------------------');
+
+  //except
+  if ('/conversation/user_feedback' == req.originalUrl) {
+    next();
+  }
+
+
   var loginid = req.query.loginid;
   var sign = req.query.sign;
   if (loginid !== null && sign !== null ) {

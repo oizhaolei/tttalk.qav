@@ -109,9 +109,10 @@ exports.cancelConversation = function(req, res, next) {
 
   findConversationByPK(conversation_id, function(err, result) {
     var conversation = result[0];
-    var agent_emp_id = conversation.agent_emp_id;
-    //busy
-    volunteer.changeField(agent_emp_id, 'busy', 0);
+    if (conversation.agent_emp_id) {
+      //busy
+      volunteer.changeField(conversation.agent_emp_id, 'busy', 0);
+    }
 
     var sql = 'update tbl_conversation set status = "cancelrequest" where id = ? and status in ("request")';
     var args = [ conversation_id ];
@@ -188,7 +189,8 @@ exports.beginCharge = function(req, res, next) {
     if (err) {
       res.status(200).json({
         success : false,
-        msg : err
+        msg : err,
+        balance : balance
       });
     } else {
       var sql1 = "select balance from tbl_user a, tbl_conversation b where a.id = b.user_id and b.id = ?";
@@ -329,6 +331,7 @@ exports.user_feedback = function(req, res, next) {
 
   var isUser = true;
   var user_id = req.query.loginid;
+  if (!user_id) user_id = req.body.loginid;
 
   feedback(conversation_id, user_id, isUser, network_star, peer_star, comment, function(err, result) {
     if (err) {
@@ -379,7 +382,11 @@ feedback = function(conversation_id, uid, isUser, network_star, peer_star, comme
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
 
-  var query = pool.query(sql, args, callback);
+  var query = pool.query(sql, args, function(err, result) {
+    if (!err && result.affectedRows === 0) err = 'no data change';
+
+    if (callback) callback(err, result);
+  });
 };
 
 exports.conversation = function(req, res, next) {

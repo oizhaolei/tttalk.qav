@@ -56,7 +56,7 @@ exports.ping = function(req, res, next) {
 };
 
 changeField = function(agent_emp_id, field, val, cb) {
-    // update sql
+  // update sql
   var sql = 'update qav_devices set ' + field + ' = ? where agent_emp_id = ?';
   var args = [ val, agent_emp_id];
 
@@ -87,10 +87,6 @@ exports.offline = function(req, res, next) {
       //memcache del
       var key = 'qav_device_' + agent_emp_id;
       cacheClient.del(key);
-      //set offline status
-      var offline_key = 'qav_offline_' + agent_emp_id;
-      cacheClient.set(offline_key, agent_emp_id, 360, function(err){
-      });
     }
   });
 };
@@ -114,12 +110,17 @@ function _send_offline_mail(agent_emp_id, callback) {
 }
 
 function _offline(agent_emp_id, callback) {
-    // update sql
+  // update sql
   var sql = 'update qav_devices set status = ?, busy = 0 where agent_emp_id = ?';
   var args = [ 'offline', agent_emp_id];
 
   logger.debug('[sql:]%s, %s', sql, JSON.stringify(args));
   var query = pool.query(sql, args, callback);
+
+  //set offline status
+  var offline_key = 'qav_offline_' + agent_emp_id;
+  cacheClient.set(offline_key, agent_emp_id, 360, function(err){
+  });
 }
 
 // http://ctalk3:4005/batch/online_check
