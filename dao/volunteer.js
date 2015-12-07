@@ -120,6 +120,7 @@ function _offline(agent_emp_id, callback) {
   //set offline status
   var offline_key = 'qav_offline_' + agent_emp_id;
   cacheClient.set(offline_key, agent_emp_id, 360, function(err){
+    logger.debug('cache set: %s, %s', offline_key, agent_emp_id);
   });
 }
 

@@ -32,6 +32,7 @@ checkSign = function(req, res, next) {
   //except
   if ('/conversation/user_feedback' == req.originalUrl) {
     next();
+    return;
   }
 
 
