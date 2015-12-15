@@ -6,6 +6,9 @@ var logger = require('log4js').getLogger('volunteer.js');
 var cacheClient = require('../lib/ocs');
 var mail = require('../lib/mail');
 
+var Gearman = require("node-gearman");
+var gearman = new Gearman(config.gearman.server, config.gearman.port);
+
 var async = require('async');
 
 var pool = mysql.createPool(config.mysql.ttt.main);
@@ -105,6 +108,20 @@ function _send_offline_mail(agent_emp_id, callback) {
       var content = 'offline: ' + to;
       mail.send(to, subject , content, function(){
       });
+
+      var message = {
+        'user_id' : agent_emp_id,
+        'title' : 'offlined',
+        'app_name': 'volunteer',
+        'content' : subject
+      };
+      var job = gearman.submitJob("push_message2", JSON.stringify(message));
+      job.on("data", function(data) {
+      });
+      job.on("end", function(data) {
+      });
+      job.on("error", function(error) {
+      });
     }
   });
 }
@@ -133,7 +150,7 @@ exports.batch_online_check = function(req, res, next) {
     logger.debug('qav_devices: %s', JSON.stringify(qav_devices));
     if (qav_devices && qav_devices.length > 0) {
       var online_count = 0;
-      async.each(qav_devices, function(qav_device, callback) {
+      async.each(qav_devices, function(qav_device, done) {
         var agent_emp_id = qav_device.agent_emp_id;
         var key = 'qav_device_' + agent_emp_id;
         cacheClient.get(key, function(err, data) {
@@ -147,7 +164,7 @@ exports.batch_online_check = function(req, res, next) {
             });
           }
 
-          callback(err);
+          done(err);
         });
       }, function(err) {
         if( err ) {
