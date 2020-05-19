@@ -9,7 +9,7 @@
     "curlrequest": "*",
     "express": "*",
     "log4js": "*",
-    "mathjs": "^2.4.0",
+    "mathjs": "^7.0.0",
     "memcached": "*",
     "mysql": "*",
     "request": "*",
